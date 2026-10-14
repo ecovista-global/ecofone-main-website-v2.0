@@ -1,0 +1,121 @@
+[
+  {
+    "id": "job-fsm",
+    "title": "Franchise Sales Manager (FSM)",
+    "department": "Franchise & Business Expansion",
+    "location": "Lucknow HQ / Regional Field Visits (Hybrid)",
+    "type": "Full Time - Hybrid / Field",
+    "experience": "2 - 5 Years",
+    "description": "Drive regional franchise network expansion for EcoFone by leading high-impact offline investor meetings and virtual Google Meet consultations. Responsible for pitching store unit economics, franchise ROI models, answering investor queries, and closing franchise partner agreements across key cities.",
+    "requirements": [
+      "Proven track record in franchise sales, dealership network expansion, or high-ticket B2B business development.",
+      "Expertise in leading face-to-face client meetings, Google Meet video pitch sessions, and contractual negotiations.",
+      "Thorough understanding of retail franchise models, CAPEX, OPEX, margins, inventory cycles, and payback periods.",
+      "Strong commercial acumen, high persuasive power, and willingness to travel for high-intent site feasibility meetings."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  },
+  {
+    "id": "job-bda",
+    "title": "Business Development Associate (BDA)",
+    "department": "Inside Sales & Business Development",
+    "location": "Lucknow HQ",
+    "type": "Full Time - On-site",
+    "experience": "1 - 3 Years / Freshers with High Grit",
+    "description": "Spearhead high-energy outbound prospecting, cold calling, and lead qualification for EcoFone's franchise expansion. Introduce aspiring entrepreneurs to India’s leading re-commerce brand, explain initial investment plans and unit models, qualify investor capability, and schedule targeted meetings for Franchise Sales Managers (FSMs).",
+    "requirements": [
+      "Exceptional verbal fluency in Hindi & English with confident telephone etiquette and rapport-building abilities.",
+      "Comfortable handling 100+ outbound calls per day, navigating objections, and qualifying serious business prospects.",
+      "Quick learner capable of understanding and explaining EcoFone's franchise offerings, commercial plans, and brand USPs.",
+      "Diligent with CRM lead logging, scheduled call follow-ups, and meeting coordination with the senior sales team."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  },
+  {
+    "id": "job-store-promoter",
+    "title": "Store Promoter & Front Manager Officer (FMO)",
+    "department": "Retail & Store Ops",
+    "location": "City-Specific (Lucknow, Kanpur & Store Experience Centers)",
+    "type": "Full Time - On-site (Store)",
+    "experience": "0 - 3 Years",
+    "description": "Represent EcoFone as the primary Front Manager Officer (FMO) on the retail store floor across our experience centers. Handle end-to-end customer dealing and front-desk interactions: engage walk-in visitors, showcase certified pre-owned smartphones, explain 32-point diagnostic testing and warranty standards, assist with old device buyback valuations, resolve buyer queries, and drive monthly store sales targets.",
+    "requirements": [
+      "Energetic personality with high customer dealing skills, hospitality mindset, and passion for gadget technology.",
+      "Strong verbal communication in Hindi & English with confidence in front-desk customer relationship handling.",
+      "Ability to explain certified refurbishment quality, testing standards, and cosmetic grading to build immediate trust with buyers.",
+      "Familiarity with POS billing counter operations, warranty issuance, customer feedback, and store inventory monitoring."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  },
+  {
+    "id": "job-bgp",
+    "title": "Business Growth Partner (BGP) - Freelance",
+    "department": "Franchise & Business Expansion (Freelance)",
+    "location": "Pan-India (Remote / Work from Anywhere)",
+    "type": "Freelance / High Commission-Based",
+    "experience": "Open to All (Freelancers, Sales Pros, DSAs & Connectors)",
+    "description": "Partner with EcoFone as an independent Business Growth Partner (BGP). Work on your own flexible schedule with zero fixed hours or geographic limits. Introduce potential franchise investors, business owners, and retail partners to India's fastest-growing re-commerce brand. Earn lucrative, high-ticket sales commissions per successfully signed franchise store agreement.",
+    "requirements": [
+      "Strong personal or professional network of retail investors, entrepreneurs, or business prospects across India.",
+      "Entrepreneurial mindset with passion for high-ticket deal making and pure performance-driven commission earnings.",
+      "Ability to initiate high-level conversations, pitch EcoFone franchise value proposition, and introduce qualified leads to our core sales team.",
+      "Zero office reporting required. Complete flexibility to work remotely as a freelance growth partner alongside your current job or business."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T16:00:00.000Z"
+  },
+  {
+    "id": "job-it-general",
+    "title": "IT Specialist & Full Stack Software Engineer",
+    "department": "IT & Tech Development",
+    "location": "Lucknow HQ / Hybrid",
+    "type": "Full Time - Hybrid",
+    "experience": "1 - 4 Years",
+    "description": "Develop and maintain the core digital infrastructure powering EcoFone's e-commerce, franchise CRM, and store operations. Build responsive web platforms, internal workflow tools, automated device grading APIs, database pipelines, and support IT systems across headquarters and store branches.",
+    "requirements": [
+      "Hands-on proficiency with Next.js, React, TypeScript, Node.js, and relational databases (PostgreSQL, MySQL, Prisma).",
+      "Experience developing and integrating REST APIs, webhooks, auth systems, and cloud deployment pipelines.",
+      "Familiarity with POS/inventory system integration, CRM data flows, and secure server management.",
+      "Ability to troubleshoot office IT networking, device setups, and automated diagnostic testing suites."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  },
+  {
+    "id": "job-social-media",
+    "title": "Social Media & Content Strategist",
+    "department": "Marketing & Social Media",
+    "location": "Lucknow HQ (On-site / Studio)",
+    "type": "Full Time - Creative",
+    "experience": "1 - 3 Years",
+    "description": "Create engaging, viral social media content that champions EcoFone’s green tech mission and re-commerce brand leadership. Plan, shoot, and edit short-form reels/shorts, smartphone unboxings, refurbishment teardowns, customer testimonials, and trend-jacking campaigns across Instagram, YouTube, and LinkedIn.",
+    "requirements": [
+      "Strong portfolio of short-form video content (Reels/Shorts) with proven audience reach and engagement.",
+      "Proficient in video shooting (smartphones/cameras) and mobile/desktop editing (CapCut, Premiere Pro, VN, After Effects).",
+      "Keen pulse on trending audio, viral video pacing, copywriting hooks, and visual storytelling for young consumers.",
+      "Basic graphic design proficiency (Canva / Figma / Photoshop) for carousels, thumbnails, and stories."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  },
+  {
+    "id": "job-intern-all",
+    "title": "Management & Tech Intern (All Categories)",
+    "department": "Emerging Talent & Internship",
+    "location": "Lucknow HQ / Hybrid",
+    "type": "Internship (3 - 6 Months, Stipend + PPO Opportunity)",
+    "experience": "Freshers / College Graduates / Final Year Students",
+    "description": "Kickstart your career with high-impact hands-on experience at India’s fastest-growing re-commerce brand. Open across all departments: Business Development & Sales, Social Media & Marketing, IT & Web Development, Mobile Hardware Diagnostics, Store Operations, and Customer Support. Mentorship by department leads with Pre-Placement Offer (PPO) potential for top performers.",
+    "requirements": [
+      "High curiosity, self-driven initiative, adaptability, and eager mindset to learn fast in a startup environment.",
+      "Strong communication and organizational skills; ready to take ownership of live daily assignments.",
+      "Basic foundational skills in relevant field (MS Excel / Google Sheets, Figma, Coding, or Social Media creation).",
+      "Availability for 3 to 6 months full-time/part-time internship. Certificate, recommendation, and stipend provided."
+    ],
+    "isActive": true,
+    "createdAt": "2026-10-13T10:00:00.000Z"
+  }
+]

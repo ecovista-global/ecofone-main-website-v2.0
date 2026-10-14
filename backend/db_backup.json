@@ -1,0 +1,155 @@
+{
+  "stores": [
+    {
+      "id": "5753d77b-6011-4fdb-96f7-c41a69c8e8c3",
+      "name": "EcoFone store, Gomti nagar",
+      "address": "1/336, Shaheed Chandrashekhar Azad Chowk, Viram Khand, Chouraha, Gomti Nagar, Lucknow, Uttar Pradesh 226010",
+      "latitude": 26.8505389,
+      "longitude": 81.0074826,
+      "phone": "9918240555",
+      "mapsUrl": "https://maps.app.goo.gl/cuZgq8WnDTBnJAqa8",
+      "type": "LIVE",
+      "ownerId": null,
+      "createdAt": "2026-07-31T04:57:35.319Z",
+      "updatedAt": "2026-07-31T04:57:35.319Z"
+    },
+    {
+      "id": "4d42e6f7-288b-4ceb-a4d4-e6b002a9becc",
+      "name": "EcoFone Store Ashiyana",
+      "address": "C 4 SECTOR F LDA COLONY PARAG KANPUR ROAD LUCKNOW UTTAR PRADESH 226012, Lucknow, Uttar Pradesh 226012",
+      "latitude": 26.782416,
+      "longitude": 80.8930493,
+      "phone": "7311108406",
+      "mapsUrl": "https://maps.app.goo.gl/pYR9QMQMt5uYYCoc7",
+      "type": "LIVE",
+      "ownerId": null,
+      "createdAt": "2026-07-31T06:12:54.145Z",
+      "updatedAt": "2026-07-31T06:12:54.145Z"
+    },
+    {
+      "id": "b0461db7-0619-41cf-97aa-330b14a2c5ed",
+      "name": "EcoFone Store Shravasti",
+      "address": "Ikauna - Bhinga Sampark Marg ",
+      "latitude": 27.6416953,
+      "longitude": 81.8839988,
+      "phone": "",
+      "mapsUrl": "https://maps.app.goo.gl/pBHCmsuW2SRcfXo68",
+      "type": "UPCOMING",
+      "ownerId": null,
+      "createdAt": "2026-07-31T06:33:43.866Z",
+      "updatedAt": "2026-07-31T06:33:43.866Z"
+    },
+    {
+      "id": "c64448bb-d06d-4c46-9ea3-39e62a23186f",
+      "name": "EcoFone Store Gorakhpur",
+      "address": "In Front Of Near Liberty Showroom Royal Residency, Keshav Market, Golghar, Gorakhpur",
+      "latitude": 26.7518718,
+      "longitude": 83.3706978,
+      "phone": "9151837103",
+      "mapsUrl": "https://maps.app.goo.gl/BzsqLtsSzdWJCyaS8",
+      "type": "LIVE",
+      "ownerId": null,
+      "createdAt": "2026-07-31T07:58:55.305Z",
+      "updatedAt": "2026-07-31T07:58:55.305Z"
+    },
+    {
+      "id": "780ce698-3ccc-4beb-b800-bef3098a21ad",
+      "name": "EcoFone Store Prayagraj",
+      "address": "729 A, Labour Chauraha, Allahpur, Prayagraj",
+      "latitude": 25.4551215,
+      "longitude": 81.8710979,
+      "phone": "",
+      "mapsUrl": "https://maps.app.goo.gl/TuK2ycjnL4LgA62t6",
+      "type": "UPCOMING",
+      "ownerId": null,
+      "createdAt": "2026-07-31T09:15:09.932Z",
+      "updatedAt": "2026-07-31T09:15:09.932Z"
+    },
+    {
+      "id": "d41c449f-8dfb-4e07-b117-839bb3fac14f",
+      "name": "EcoFone Store Bareilly",
+      "address": "",
+      "latitude": 26.846694,
+      "longitude": 80.946166,
+      "phone": "",
+      "mapsUrl": "",
+      "type": "UPCOMING",
+      "ownerId": null,
+      "createdAt": "2026-07-31T09:18:09.110Z",
+      "updatedAt": "2026-07-31T09:18:09.110Z"
+    }
+  ],
+  "franchise": [
+    {
+      "id": "528bd72a-3992-451b-a6fb-70aab55158fc",
+      "applicantName": "Rajat Satish tiwari",
+      "email": "rajat0101tiwari@gmail.com",
+      "phone": "9919517660",
+      "locationPreference": "Uttar Pradesh ",
+      "investmentCapacity": 2000000,
+      "experienceDesc": "7 year",
+      "status": "PENDING",
+      "createdAt": "2026-08-17T17:46:00.616Z"
+    },
+    {
+      "id": "10500b8d-11bf-4a36-a22c-61eaf1a790ac",
+      "applicantName": "Mohd Shadab ",
+      "email": "sheikha.shadab4@gmail.com",
+      "phone": "9695270624",
+      "locationPreference": "Gorakhpur /up ",
+      "investmentCapacity": 1500000,
+      "experienceDesc": "Retail",
+      "status": "PENDING",
+      "createdAt": "2026-08-18T00:25:11.627Z"
+    },
+    {
+      "id": "2eaa1788-fbff-4475-ba23-cc3aea31849a",
+      "applicantName": "Vijay Kumar",
+      "email": "vk271830@gmail.com",
+      "phone": "7390077755",
+      "locationPreference": "Mahoba Uattar Pradesh",
+      "investmentCapacity": 1500000,
+      "experienceDesc": "Retail Experience",
+      "status": "PENDING",
+      "createdAt": "2026-08-18T03:50:00.085Z"
+    }
+  ],
+  "certs": [
+    {
+      "id": "3ccb32a6-2a02-437a-95ef-652ad2e8cfee",
+      "uid": "EVG-INT-2026-1114321",
+      "recipientName": "SRASHTI PATEL",
+      "type": "INTERNSHIP",
+      "role": "MANAGEMENT TRANEE",
+      "startDate": "2026-05-21T00:00:00.000Z",
+      "endDate": "2026-07-20T00:00:00.000Z",
+      "issueDate": "2026-07-31T00:00:00.000Z",
+      "description": "Successfully completed term at Ecovista Global Private Limited.",
+      "authorizedSignatory": "Ecovista Global Private Limited",
+      "registeredOffice": "505, JB Metro Heights, Kanpur Road, Lucknow – 226012",
+      "website": "www.ecofone.co.in",
+      "email": "business@ecofone.co.in",
+      "cin": "U70109UP2020PTC138839",
+      "createdAt": "2026-08-17T10:56:13.062Z",
+      "updatedAt": "2026-08-17T10:56:13.062Z"
+    },
+    {
+      "id": "6cd2dc7b-743c-4557-a4f3-0c7d3b27e8f0",
+      "uid": "EVG-INT-2026-6732490",
+      "recipientName": "POOJA GUPTA",
+      "type": "INTERNSHIP",
+      "role": "MANAGEMENT TRANEE",
+      "startDate": "2026-05-21T00:00:00.000Z",
+      "endDate": "2026-07-20T00:00:00.000Z",
+      "issueDate": "2026-07-31T00:00:00.000Z",
+      "description": "Successfully completed term at Ecovista Global Private Limited.",
+      "authorizedSignatory": "Ecovista Global Private Limited",
+      "registeredOffice": "505, JB Metro Heights, Kanpur Road, Lucknow – 226012",
+      "website": "www.ecofone.co.in",
+      "email": "business@ecofone.co.in",
+      "cin": "U70109UP2020PTC138839",
+      "createdAt": "2026-08-18T06:59:10.229Z",
+      "updatedAt": "2026-08-18T06:59:10.229Z"
+    }
+  ]
+}
