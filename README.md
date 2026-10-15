@@ -7,20 +7,22 @@
 ## 📌 Table of Contents
 1. [Project Overview](#project-overview)
 2. [Tech Stack](#tech-stack)
-3. [October 14, 2026 Updates (Latest)](#october-14-2026-updates-latest)
+3. [October 15, 2026 Updates (Latest)](#october-15-2026-updates-latest)
+   - [Authentic Market Research & Editorial Images](#authentic-market-research--editorial-images)
+4. [October 14, 2026 Updates](#october-14-2026-updates)
    - [Contact Us Page Redesign](#contact-us-page-redesign)
-4. [October 13, 2026 Updates](#october-13-2026-updates)
+5. [October 13, 2026 Updates](#october-13-2026-updates)
    - [Interactive Resume Upload ("Upload from Drive / Device")](#1-interactive-resume-upload-upload-from-drive--device)
    - [Job Openings Restructuring (7 Core Roles)](#2-job-openings-restructuring-7-core-roles)
    - [UI / UX Brand Harmonization](#3-ui--ux-brand-harmonization)
    - [SEO & Google Jobs Schema.org Optimization](#4-seo--google-jobs-schemaorg-optimization)
-5. [October 12, 2026 Infrastructure Updates](#october-12-2026-infrastructure-updates)
+6. [October 12, 2026 Infrastructure Updates](#october-12-2026-infrastructure-updates)
    - [Dual Zoho SMTP Integration](#dual-zoho-smtp-integration)
    - [Data Segregation & Rate Limiting](#data-segregation--rate-limiting)
    - [Server-Side Excel Exporter](#server-side-excel-exporter)
-6. [Directory Structure](#directory-structure)
-7. [API Endpoints Reference](#api-endpoints-reference)
-8. [Running Locally](#running-locally)
+7. [Directory Structure](#directory-structure)
+8. [API Endpoints Reference](#api-endpoints-reference)
+9. [Running Locally](#running-locally)
 
 ---
 
@@ -42,7 +44,22 @@
 
 ---
 
-## 🌟 October 14, 2026 Updates (Latest)
+## 🌟 October 15, 2026 Updates (Latest)
+
+### Authentic Market Research & Editorial Images
+- **Replaced Generated Illustrations with Genuine Research Media**:
+  - Replaced AI illustration placeholders with real, authentic news publication photographs and market research charts.
+  - **Counterpoint Research (13% YoY Volume Growth)**: Downloaded and integrated official Counterpoint chart visualization (`/article_counterpoint_chart.webp`).
+  - **Business Standard (Costlier new phones drive demand)**: High-resolution editorial photo of refurbished device inspection (`/article_bs_costlier.jpg`).
+  - **Business Standard (1 in 5 smartphones sold in India)**: Market research publication graphic (`/article_bs_1in5.jpg`).
+  - **Times of India (Rising cost fuels rush for refurbished devices)**: Editorial publication photo on tech re-commerce (`/article_toi_rising.jpg`).
+- **Resilience & Offline Fallback**:
+  - Synchronized `market-opportunity.tsx` and `backend/data/research_articles.json` to reference the local assets in `/public/`, avoiding external CORS or referrer hotlink restrictions.
+  - Overwrote legacy fallback images (`counterpoint_1.png`, `counterpoint_2.png`, `idc.png`, `eco.png`) with the authentic media to eliminate generated illustrations permanently.
+
+---
+
+## 🌟 October 14, 2026 Updates
 
 ### Contact Us Page Redesign
 - **Top Header**: Clean header with `Contact EcoFone HQ` in brand orange accent with balanced top padding directly below the navbar (removed "GET IN TOUCH" badge for minimal clutter).

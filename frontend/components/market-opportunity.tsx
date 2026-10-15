@@ -20,43 +20,43 @@ export default function MarketOpportunity() {
         }
       } catch (err) {
         console.error('Failed to fetch research articles:', err);
-        // Fallback for visual testing if API fails
+        // Fallback with authentic original research publications and charts
         setReports([
           {
             id: "1",
             publisher: 'Counterpoint Research',
             date: 'Jul 2026',
             title: 'India Refurbished Smartphone Volumes Grew 13% YoY in H1 2026',
-            description: 'Strong demand and improving supply chain driving growth in the refurbished smartphone market in India.',
-            url: '#',
-            imageUrl: '/counterpoint_1.png'
+            description: 'India refurbished smartphone volumes grew 13% YoY in H1 2026 as rising component costs and inflation drive strong consumer demand.',
+            url: 'https://counterpointresearch.com/en/insights/india-refurbished-smartphone-volumes-grew-13-percent-yoy-in-h1-2026',
+            imageUrl: '/article_counterpoint_chart.webp'
           },
           {
             id: "2",
-            publisher: 'Counterpoint Research',
-            date: 'Jan 2025',
-            title: "India's Evolving Refurbished Smartphone Growth Story",
-            description: 'Key trends, market size, and opportunities shaping India’s refurbished smartphone industry.',
-            url: '#',
-            imageUrl: '/counterpoint_2.png'
+            publisher: 'Business Standard',
+            date: 'Sep 02 2026',
+            title: 'Costlier new phones drive demand for refurbished devices in India: Report',
+            description: "India's refurbished smartphone market is growing rapidly as new devices get costlier, with secondary market demand hitting record highs.",
+            url: 'https://www.business-standard.com/technology/tech-news/refurbished-phones-market-india-new-smartphone-prices-126090200913_1.html',
+            imageUrl: '/article_bs_costlier.jpg'
           },
           {
             id: "3",
-            publisher: 'iDC',
-            date: 'Oct 2024',
-            title: 'The Smartphone Shifts: Why Second-Hand Devices are Outpacing New Ones',
-            description: 'How macroeconomic factors, sustainability and value-conscious consumers are driving the growth of the second-hand smartphone market.',
-            url: '#',
-            imageUrl: '/idc.png'
+            publisher: 'Business Standard',
+            date: 'Apr 21 2025',
+            title: '1 in 5 smartphones sold in India is refurbished: Counterpoint Research',
+            description: 'Experts point out that many consumers looking to upgrade prefer feature-packed certified refurbished smartphones over entry-level new ones.',
+            url: 'https://www.business-standard.com/industry/news/1-in-5-smartphones-sold-in-india-is-refurbished-counterpoint-research-125042101379_1.html',
+            imageUrl: '/article_bs_1in5.jpg'
           },
           {
             id: "4",
-            publisher: 'Deven Choksey Research',
-            date: 'Jun 2024',
-            title: 'Eco Recycling',
-            description: 'An in-depth analysis of India’s e-waste, device refurbishment ecosystem and the long-term opportunity in circular electronics.',
-            url: '#',
-            imageUrl: '/eco.png'
+            publisher: 'Times of India',
+            date: 'July 16, 2026',
+            title: 'Rising cost fuels rush for refurbished devices',
+            description: "Soaring memory and chip costs push up new smartphone prices, accelerating consumer shift towards certified pre-owned alternatives.",
+            url: 'https://timesofindia.indiatimes.com/business/india-business/rising-cost-fuels-rush-for-refurbished-devices/articleshow/132427518.cms',
+            imageUrl: '/article_toi_rising.jpg'
           }
         ]);
       }
@@ -169,10 +169,10 @@ export default function MarketOpportunity() {
                     alt={report.title} 
                     onError={(e) => {
                       const fallbacks = [
-                        '/counterpoint_1.png',
-                        '/counterpoint_2.png',
-                        '/idc.png',
-                        '/eco.png'
+                        '/article_counterpoint_chart.webp',
+                        '/article_bs_costlier.jpg',
+                        '/article_bs_1in5.jpg',
+                        '/article_toi_rising.jpg'
                       ];
                       const target = e.currentTarget;
                       const nextSrc = fallbacks[idx % fallbacks.length];
