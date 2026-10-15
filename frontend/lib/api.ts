@@ -114,13 +114,46 @@ export const api = {
   deleteReview: (id: string) => apiRequest(`cms/reviews/${id}`, { method: 'DELETE' }),
   updateReview: (id: string, payload: any) => apiRequest(`cms/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   getJobs: () => apiRequest('cms/jobs'),
-  locateStores: (lat?: number, lng?: number) => {
+  locateStores: async (lat?: number, lng?: number) => {
+    try {
+      const res = await fetch('/api/stores');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
+    } catch (e) {}
     const query = lat !== undefined && lng !== undefined ? `?lat=${lat}&lng=${lng}` : '';
     return apiRequest(`cms/stores${query}`);
   },
-  addStore: (payload: any) => apiRequest('cms/stores', { method: 'POST', body: JSON.stringify(payload) }),
-  deleteStore: (id: string) => apiRequest(`cms/stores/${id}`, { method: 'DELETE' }),
-  updateStore: (id: string, payload: any) => apiRequest(`cms/stores/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  addStore: async (payload: any) => {
+    try {
+      const res = await fetch('/api/stores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest('cms/stores', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  deleteStore: async (id: string) => {
+    try {
+      const res = await fetch(`/api/stores?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest(`cms/stores/${id}`, { method: 'DELETE' });
+  },
+  updateStore: async (id: string, payload: any) => {
+    try {
+      const res = await fetch('/api/stores', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...payload })
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest(`cms/stores/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  },
   aiChat: (message: string, history: any[]) => apiRequest('cms/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }) }),
   resolveMapsUrl: (url: string) => apiRequest(`cms/resolve-maps?url=${encodeURIComponent(url)}`),
   geocodeAddress: (address: string) => apiRequest(`cms/geocode?address=${encodeURIComponent(address)}`),

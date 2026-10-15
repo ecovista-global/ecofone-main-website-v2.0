@@ -1,0 +1,50 @@
+[
+  {
+    "id": "store-hazratganj",
+    "name": "EcoFone Store - Hazratganj",
+    "area": "Hazratganj",
+    "city": "Lucknow",
+    "address": "Shop No. 12, Ground Floor, Hazratganj Market, Lucknow, Uttar Pradesh – 226001",
+    "timings": "10:00 AM - 10:00 PM",
+    "phone": "+91 99199 65499",
+    "isOpen": true,
+    "type": "LIVE",
+    "imageUrl": "/store_hazratganj.jpg",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Shop+No.+12+Ground+Floor+Hazratganj+Market+Lucknow+Uttar+Pradesh+226001",
+    "latitude": 26.8467,
+    "longitude": 80.9462,
+    "createdAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "store-alambagh",
+    "name": "EcoFone Store - Alambagh",
+    "area": "Alambagh",
+    "city": "Lucknow",
+    "address": "Shop No. G-4, Alambagh Market, Alambagh, Lucknow, Uttar Pradesh – 226005",
+    "timings": "10:00 AM - 09:00 PM",
+    "phone": "+91 99199 65499",
+    "isOpen": true,
+    "type": "LIVE",
+    "imageUrl": "/store_alambagh.jpg",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Shop+No.+G-4+Alambagh+Market+Alambagh+Lucknow+Uttar+Pradesh+226005",
+    "latitude": 26.8142,
+    "longitude": 80.9022,
+    "createdAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "store-gomtinagar",
+    "name": "EcoFone Store - Gomti Nagar",
+    "area": "Gomti Nagar",
+    "city": "Lucknow",
+    "address": "D-202, Vibhuti Khand, Gomti Nagar, Lucknow, Uttar Pradesh – 226010",
+    "timings": "10:00 AM - 09:00 PM",
+    "phone": "+91 99199 65499",
+    "isOpen": true,
+    "type": "LIVE",
+    "imageUrl": "/store_gomtinagar.jpg",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=D-202+Vibhuti+Khand+Gomti+Nagar+Lucknow+Uttar+Pradesh+226010",
+    "latitude": 26.8627,
+    "longitude": 81.0012,
+    "createdAt": "2026-10-15T10:00:00.000Z"
+  }
+]

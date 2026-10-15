@@ -1,171 +1,303 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, Clock, Phone, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { api } from '../lib/api';
+
+export interface StoreItem {
+  id: string;
+  name: string;
+  area?: string;
+  city?: string;
+  address: string;
+  timings?: string;
+  phone?: string;
+  isOpen?: boolean;
+  type?: string;
+  imageUrl?: string;
+  mapsUrl?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+const DEFAULT_STORES: StoreItem[] = [
+  {
+    id: "store-hazratganj",
+    name: "EcoFone Store - Hazratganj",
+    area: "Hazratganj",
+    city: "Lucknow",
+    address: "Shop No. 12, Ground Floor, Hazratganj Market, Lucknow, Uttar Pradesh – 226001",
+    timings: "10:00 AM - 10:00 PM",
+    phone: "+91 99199 65499",
+    isOpen: true,
+    type: "LIVE",
+    imageUrl: "/store_hazratganj.jpg",
+    mapsUrl: "https://www.google.com/maps/search/?api=1&query=Shop+No.+12+Ground+Floor+Hazratganj+Market+Lucknow+Uttar+Pradesh+226001"
+  },
+  {
+    id: "store-alambagh",
+    name: "EcoFone Store - Alambagh",
+    area: "Alambagh",
+    city: "Lucknow",
+    address: "Shop No. G-4, Alambagh Market, Alambagh, Lucknow, Uttar Pradesh – 226005",
+    timings: "10:00 AM - 09:00 PM",
+    phone: "+91 99199 65499",
+    isOpen: true,
+    type: "LIVE",
+    imageUrl: "/store_alambagh.jpg",
+    mapsUrl: "https://www.google.com/maps/search/?api=1&query=Shop+No.+G-4+Alambagh+Market+Alambagh+Lucknow+Uttar+Pradesh+226005"
+  },
+  {
+    id: "store-gomtinagar",
+    name: "EcoFone Store - Gomti Nagar",
+    area: "Gomti Nagar",
+    city: "Lucknow",
+    address: "D-202, Vibhuti Khand, Gomti Nagar, Lucknow, Uttar Pradesh – 226010",
+    timings: "10:00 AM - 09:00 PM",
+    phone: "+91 99199 65499",
+    isOpen: true,
+    type: "LIVE",
+    imageUrl: "/store_gomtinagar.jpg",
+    mapsUrl: "https://www.google.com/maps/search/?api=1&query=D-202+Vibhuti+Khand+Gomti+Nagar+Lucknow+Uttar+Pradesh+226010"
+  }
+];
 
 export default function StoreLocatorSection() {
+  const [stores, setStores] = useState<StoreItem[]>(DEFAULT_STORES);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchStores() {
+      try {
+        const data = await api.locateStores();
+        if (Array.isArray(data) && data.length > 0) {
+          setStores(data);
+        }
+      } catch (err) {
+        console.warn('Using default stores fallback:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStores();
+  }, []);
+
+  // Slide controls
+  const visibleCardsCount = 3;
+  const maxIndex = Math.max(0, stores.length - visibleCardsCount);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
+  };
+
   return (
-    <section className="w-full bg-[#f8fbf9] py-10 sm:py-12 px-4 sm:px-6 lg:px-12 overflow-hidden">
-      <div className="max-w-[1280px] mx-auto">
+    <section id="stores-section" className="w-full bg-[#f8fbf9] py-14 sm:py-20 px-4 sm:px-6 lg:px-12 relative overflow-hidden font-sans">
+      
+      {/* Decorative ambient backdrop */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-3xl pointer-events-none -mr-40 -mt-40" />
+      <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-orange-100/30 rounded-full blur-3xl pointer-events-none -ml-32 -mb-32" />
+
+      <div className="max-w-[1440px] mx-auto relative z-10">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+        {/* Top Header Row with Controls */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-12">
           
-          {/* ── LEFT COLUMN: 3D Perspective Phone Graphic Asset (Seamlessly Blended) ── */}
-          <div className="lg:col-span-5 relative flex items-center justify-center py-4 select-none">
-            <div className="relative w-full max-w-[480px] sm:max-w-[520px] flex items-center justify-center">
-              <img
-                src="/store_locator_phone_mockup.png"
-                alt="EcoFone Store Locator App Display"
-                className="w-full h-auto object-contain hover:scale-[1.02] transition-transform duration-500"
-                style={{ mixBlendMode: 'darken' }}
-              />
-            </div>
+          {/* Left Titles */}
+          <div className="max-w-2xl">
+            {/* Pill Badge */}
+            <span className="inline-block bg-[#e8f5e9] text-[#1b5e20] text-[11px] sm:text-xs font-black tracking-widest px-3.5 py-1 rounded-full uppercase mb-3 border border-emerald-200/60 shadow-sm">
+              OUR STORES
+            </span>
+
+            {/* Main Heading */}
+            <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black text-[#0f281e] tracking-tight leading-[1.15]">
+              Find an <span className="text-[#ea580c]">EcoFone Store</span> Near You
+            </h2>
+
+            {/* Subtitle */}
+            <p className="text-slate-600 text-sm sm:text-[15px] mt-2.5 leading-relaxed font-medium">
+              Visit our nearest EcoFone store to explore the latest smartphones, accessories and more.
+            </p>
           </div>
 
-          {/* ── RIGHT COLUMN: Store Locator Content & 6 Features Grid ── */}
-          <div className="lg:col-span-7 space-y-8">
-            
-            {/* Header Title */}
-            <div className="space-y-3.5">
+          {/* Right Action Controls (No page redirection - inline controls) */}
+          <div className="flex items-center gap-3 self-start md:self-end">
+            <button
+              type="button"
+              onClick={() => setShowAll((prev) => !prev)}
+              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-full border border-slate-700/70 bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-[13px] font-bold shadow-sm hover:shadow transition-all flex items-center gap-2 group cursor-pointer"
+            >
+              <span>{showAll ? 'Show Carousel' : 'View all stores'}</span>
+              <span className="text-xs group-hover:translate-x-0.5 transition-transform">→</span>
+            </button>
 
-              <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-[44px] text-slate-900 leading-[1.15]">
-                Visit an <span className="text-[#f97316]">Eco</span><span className="text-[#059669]">Fone</span> Store Near You
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
-                Find a physical certified refurbished mobile store to buy warranty-backed smartphones,
-                trade-in your old phone for instant cash, or get immediate express hardware repairs — all under one roof.
-              </p>
-            </div>
-
-            {/* 6 Feature Items (2 Columns x 3 Rows) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-7 pt-1">
-              
-              {/* Feature 1: Buy */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#059669] flex items-center justify-center flex-shrink-0 border border-emerald-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Buy</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    Explore a wide range of certified pre-owned smartphones at competitive prices.
-                  </p>
-                </div>
+            {!showAll && stores.length > visibleCardsCount && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  aria-label="Previous store"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={currentIndex >= maxIndex}
+                  aria-label="Next store"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#0a271d] hover:bg-[#061810] flex items-center justify-center text-white disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+                >
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
               </div>
-
-              {/* Feature 2: Sell / Trade-In */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#f97316] flex items-center justify-center flex-shrink-0 border border-orange-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Sell / Trade-In</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    Get instant cash for your old phone after a quick device check.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 3: Repair */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#f97316] flex items-center justify-center flex-shrink-0 border border-orange-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.298c-.203-.896-.064-1.847.4-2.65l3.277-3.277a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Repair</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    Get hardware repairs done in 15 minutes (where possible) by trained technicians.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 4: Warranty Backed */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#059669] flex items-center justify-center flex-shrink-0 border border-emerald-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Warranty Backed</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    All devices come with a 6-month comprehensive warranty.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 5: Accessories */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#059669] flex items-center justify-center flex-shrink-0 border border-emerald-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Accessories</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    Genuine accessories for a complete smartphone experience.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 6: Multiple Locations */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#f97316] flex items-center justify-center flex-shrink-0 border border-orange-100/60 shadow-sm">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">Multiple Locations</h3>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                    Find EcoFone stores across major cities in India.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 w-full max-w-[580px]">
-              
-              {/* Button 1: Solid Orange Card with Map Pin */}
-              <Link
-                href="/stores"
-                className="bg-[#f97316] hover:bg-orange-600 text-white font-semibold text-[13px] sm:text-sm px-4 h-13 sm:h-14 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group w-full"
-              >
-                <div className="w-7 h-7 rounded-full border-[1.5px] border-white/80 flex items-center justify-center flex-shrink-0 bg-white/10">
-                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                  </svg>
-                </div>
-                <span className="whitespace-nowrap">Find Closest Store (GPS)</span>
-                <span className="group-hover:translate-x-1 transition-transform text-base">→</span>
-              </Link>
-              
-              {/* Button 2: White Outline Card */}
-              <Link
-                href="/stores"
-                className="bg-white border-2 border-orange-300 text-[#f97316] hover:bg-orange-50 font-semibold text-[13px] sm:text-sm px-4 h-13 sm:h-14 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-sm w-full"
-              >
-                <span className="whitespace-nowrap">View All Stores</span>
-                <span className="group-hover:translate-x-1 transition-transform text-base">→</span>
-              </Link>
-
-            </div>
-
+            )}
           </div>
 
         </div>
 
+        {/* ── STORE CARDS DISPLAY (3 in a row on desktop) ── */}
+        {showAll ? (
+          /* Grid View when 'View all stores' is clicked */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {stores.map((store) => (
+              <StoreCard key={store.id} store={store} />
+            ))}
+          </div>
+        ) : (
+          /* Carousel View (Default) */
+          <div className="relative overflow-hidden" ref={carouselContainerRef}>
+            <div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 transition-transform duration-500 ease-out"
+              style={{
+                transform: stores.length > visibleCardsCount 
+                  ? `translateX(-${currentIndex * (100 / visibleCardsCount)}%)` 
+                  : 'none'
+              }}
+            >
+              {stores.map((store) => (
+                <div key={store.id} className="w-full">
+                  <StoreCard store={store} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </section>
+  );
+}
+
+function StoreCard({ store }: { store: StoreItem }) {
+  const directionsUrl = store.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address || store.name)}`;
+  const cleanPhone = (store.phone || '+91 99199 65499').replace(/\s+/g, '');
+
+  return (
+    <div className="bg-white rounded-[24px] sm:rounded-[28px] border border-slate-200/90 overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_35px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col group h-full">
+      
+      {/* 1. Top Storefront Image */}
+      <div className="w-full h-[200px] sm:h-[220px] relative overflow-hidden bg-slate-100 flex-shrink-0">
+        <img
+          src={store.imageUrl || '/store_hazratganj.jpg'}
+          alt={store.name}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.src.endsWith('/store_hazratganj.jpg')) {
+              target.src = '/store_hazratganj.jpg';
+            }
+          }}
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+        />
+
+        {/* Floating Open/Closed Status Badge */}
+        <div className="absolute top-3.5 left-3.5 z-10">
+          {store.isOpen !== false ? (
+            <span className="inline-flex items-center gap-1.5 bg-[#4ade80]/90 backdrop-blur-md text-[#064e3b] text-[11px] font-black px-3 py-1 rounded-full shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse" />
+              Open Now
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 bg-rose-500/90 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-full shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-rose-200" />
+              Closed
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Middle Content Stack */}
+      <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+        <div>
+          {/* Store Name & Google Maps External Link */}
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-bold text-lg sm:text-[19px] text-[#0f281e] tracking-tight leading-snug">
+              {store.name}
+            </h3>
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${store.name} on Google Maps`}
+              className="text-slate-400 hover:text-emerald-700 transition-colors flex-shrink-0 mt-0.5"
+              title="Open location on Google Maps"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+
+          {/* Details (Address & Timings) */}
+          <div className="space-y-3 mt-4 text-[13px] sm:text-[13.5px]">
+            {/* Address */}
+            <div className="flex items-start gap-2.5">
+              <MapPin className="w-4 h-4 text-[#059669] flex-shrink-0 mt-0.5" />
+              <p className="text-slate-600 leading-snug">
+                <strong className="text-slate-900 font-bold">Address:</strong>{' '}
+                {store.address}
+              </p>
+            </div>
+
+            {/* Timings */}
+            <div className="flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-[#ea580c] flex-shrink-0 mt-0.5" />
+              <p className="text-slate-600 leading-snug">
+                <strong className="text-slate-900 font-bold">Timings:</strong>{' '}
+                {store.timings || '10:00 AM - 09:00 PM'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Bottom Action Buttons Bar (Call Store | Get Directions) */}
+        <div className="mt-6 pt-3 border-t border-slate-100 grid grid-cols-2 divide-x divide-slate-100 bg-[#f8fbf9] -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 rounded-b-[24px] sm:rounded-b-[28px] overflow-hidden">
+          <a
+            href={`tel:${cleanPhone}`}
+            className="flex items-center justify-center gap-2 py-3.5 px-3 text-[#059669] hover:text-[#047857] hover:bg-emerald-50/60 font-bold text-xs sm:text-[13px] transition-all"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span>Call Store</span>
+          </a>
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-3.5 px-3 text-[#059669] hover:text-[#047857] hover:bg-emerald-50/60 font-bold text-xs sm:text-[13px] transition-all"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Get Directions</span>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
   );
 }

@@ -57,6 +57,18 @@
   - Synchronized `market-opportunity.tsx` and `backend/data/research_articles.json` to reference the local assets in `/public/`, avoiding external CORS or referrer hotlink restrictions.
   - Overwrote legacy fallback images (`counterpoint_1.png`, `counterpoint_2.png`, `idc.png`, `eco.png`) with the authentic media to eliminate generated illustrations permanently.
 
+### Store Locator Redesign & Full Admin Panel CMS (`/` Homepage & `/admin`)
+- **Landing Page Store Locator**:
+  - Rebuilt `store-locator-section.tsx` to match brand mockup featuring `OUR STORES` pill, `Find an EcoFone Store Near You` headline, and 3-outlet carousel grid.
+  - Cards feature real storefront photography, `● Open Now` status badge, store name with external map icon, detailed address, timings, `📞 Call Store` button, and `📍 Get Directions` button.
+  - Removed separate page redirection; `/stores` immediately redirects to `/#stores-section` and the "View all stores" button expands all stores directly on the page.
+- **Admin Panel Store Management (`StoresManager`)**:
+  - Comprehensive store management panel under the `/admin` `stores` tab.
+  - Add, edit, and delete store locations.
+  - Upload custom storefront photos or pick presets (`/api/stores/upload`).
+  - Toggle live status (`Open Now` / `Closed`) with a single click.
+  - Backed by persistent server-side storage in `data/stores.json` and Next.js route handlers (`/api/stores`).
+
 ---
 
 ## 🌟 October 14, 2026 Updates
