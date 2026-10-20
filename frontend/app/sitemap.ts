@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { getAllBlogSlugs } from '../data/blogs';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://www.ecofone.co.in';
@@ -15,6 +16,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/stores',
   ];
 
+  const blogRoutes = getAllBlogSlugs().map(slug => `/blog/${slug}`);
+
   const franchiseCities = [
     'mumbai', 'delhi', 'bangalore', 'hyderabad', 'chennai', 'pune', 
     'kolkata', 'lucknow', 'jaipur', 'ahmedabad', 'noida', 'gurgaon', 
@@ -23,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const cityRoutes = franchiseCities.map(city => `/franchise/${city}`);
   
-  const allRoutes = [...baseRoutes, ...cityRoutes];
+  const allRoutes = [...baseRoutes, ...blogRoutes, ...cityRoutes];
 
   return allRoutes.map((route) => ({
     url: `${baseUrl}${route}`,

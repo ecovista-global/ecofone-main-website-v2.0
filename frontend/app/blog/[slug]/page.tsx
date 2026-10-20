@@ -1,95 +1,173 @@
-'use client';
+import type { Metadata } from 'next';
+import React from 'react';
+import { notFound } from 'next/navigation';
+import { BLOG_POSTS, getBlogPostBySlug, getAllBlogSlugs } from '../../../data/blogs';
+import BlogDetailClient from './blog-detail-client';
 
-import React, { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
-import Link from 'next/link';
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  seoTitle: string;
-  seoDesc: string;
-  publishedAt: string;
+interface BlogDetailPageProps {
+  params: Promise<{ slug: string }>;
 }
 
-export default function BlogDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const [slug, setSlug] = useState<string>('');
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
+export async function generateStaticParams() {
+  return getAllBlogSlugs().map((slug) => ({ slug }));
+}
 
-  useEffect(() => {
-    // Resolve dynamic params Promise
-    params.then((resolvedParams) => {
-      setSlug(resolvedParams.slug);
-    });
-  }, [params]);
+export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getBlogPostBySlug(slug);
 
-  useEffect(() => {
-    if (!slug) return;
-    async function loadPost() {
-      setIsLoading(true);
-      setErrorMsg('');
-      try {
-        const res = await api.getBlogBySlug(slug);
-        setPost(res);
-      } catch (err: any) {
-        setErrorMsg(err.message || 'Article not found');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadPost();
-  }, [slug]);
+  if (!post) {
+    return {
+      title: 'Article Not Found | EcoFone',
+      description: 'The requested research article could not be found.',
+    };
+  }
 
-  const renderContent = (content: string) => {
-    // Basic Markdown parser helper to convert headers and paragraphs
-    return content.split('\n\n').map((block, idx) => {
-      if (block.startsWith('# ')) {
-        return <h1 key={idx} className="font-display font-bold text-3xl text-white mt-8 mb-4">{block.slice(2)}</h1>;
-      }
-      if (block.startsWith('## ')) {
-        return <h2 key={idx} className="font-display font-bold text-2xl text-white mt-6 mb-3">{block.slice(3)}</h2>;
-      }
-      return <p key={idx} className="text-gray-300 text-sm md:text-base leading-relaxed mb-4">{block}</p>;
-    });
+  const siteUrl = 'https://www.ecofone.co.in';
+  const postUrl = `${siteUrl}/blog/${post.slug}`;
+  const imageUrl = post.imageUrl.startsWith('http') ? post.imageUrl : `${siteUrl}${post.imageUrl}`;
+
+  return {
+    title: `${post.seoTitle} | EcoFone Research`,
+    description: post.seoDesc,
+    keywords: post.keywords,
+    alternates: {
+      canonical: postUrl,
+    },
+    openGraph: {
+      title: post.title,
+      description: post.seoDesc,
+      url: postUrl,
+      siteName: 'EcoFone India',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: post.imageAlt,
+        },
+      ],
+      locale: 'en_IN',
+      type: 'article',
+      publishedTime: post.publishedAt,
+      modifiedTime: post.modifiedAt,
+      authors: [post.author.name],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.seoDesc,
+      images: [imageUrl],
+      creator: '@ecofonel82115',
+    },
+  };
+}
+
+export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
+  const { slug } = await params;
+  const post = getBlogPostBySlug(slug);
+
+  if (!post) {
+    notFound();
+  }
+
+  const relatedPosts = post.relatedSlugs
+    .map((rSlug) => getBlogPostBySlug(rSlug))
+    .filter((p): p is typeof post => Boolean(p));
+
+  const siteUrl = 'https://www.ecofone.co.in';
+  const postUrl = `${siteUrl}/blog/${post.slug}`;
+  const imageUrl = post.imageUrl.startsWith('http') ? post.imageUrl : `${siteUrl}${post.imageUrl}`;
+
+  // Structured Data: BlogPosting / Article
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    '@id': `${postUrl}#article`,
+    headline: post.title,
+    description: post.seoDesc,
+    image: imageUrl,
+    datePublished: post.publishedAt,
+    dateModified: post.modifiedAt,
+    author: {
+      '@type': 'Organization',
+      name: post.author.name,
+      url: siteUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'EcoFone India',
+      url: siteUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteUrl}/logo.jpg`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': postUrl,
+    },
+    keywords: post.keywords.join(', '),
+    articleSection: post.category,
   };
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
-      <div className="border-b border-white/10 pb-6 space-y-4">
-        <Link href="/blog" className="text-ecoGreen-400 hover:text-ecoGreen-300 text-xs font-semibold">
-          ← Back to Publications
-        </Link>
-        
-        {post && (
-          <div className="space-y-2">
-            <span className="text-[10px] text-gray-500">
-              Published: {new Date(post.publishedAt).toLocaleDateString('en-IN', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-            </span>
-            <h1 className="font-display font-bold text-3xl sm:text-4xl text-white leading-tight">
-              {post.title}
-            </h1>
-            <p className="text-xs text-gray-400 italic">{post.seoDesc}</p>
-          </div>
-        )}
-      </div>
+  // Structured Data: BreadcrumbList
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: siteUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Articles & Research',
+        item: `${siteUrl}/blog`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: postUrl,
+      },
+    ],
+  };
 
-      {isLoading ? (
-        <div className="text-center text-xs text-gray-500 py-12">Loading article content...</div>
-      ) : errorMsg ? (
-        <div className="text-center text-red-400 text-xs py-12">{errorMsg}</div>
-      ) : post ? (
-        <article className="prose prose-invert max-w-none pt-4">
-          {renderContent(post.content)}
-        </article>
-      ) : null}
-    </div>
+  // Structured Data: FAQPage (if FAQs exist)
+  const faqSchema = post.faqs && post.faqs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  } : null;
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+      <BlogDetailClient post={post} relatedPosts={relatedPosts} />
+    </>
   );
 }

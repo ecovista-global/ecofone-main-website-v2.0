@@ -111,11 +111,12 @@ export default function Navbar() {
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
     { name: 'Franchise', href: '/franchise' },
+    { name: 'Blogs', href: '/blog' },
     { name: 'Contact Us', href: '/contact' },
   ];
 
   const getLinkClass = (href: string) => {
-    const isActive = pathname === href;
+    const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href);
     return isActive
       ? 'text-slate-950 font-bold border-b-2 border-slate-900 pb-0.5'
       : 'text-slate-700 hover:text-slate-950 font-semibold transition-colors';

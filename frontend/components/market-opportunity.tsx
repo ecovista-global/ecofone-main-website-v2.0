@@ -20,7 +20,7 @@ export default function MarketOpportunity() {
         }
       } catch (err) {
         console.error('Failed to fetch research articles:', err);
-        // Fallback with authentic original research publications and charts
+        // Authentic original research publications mapped to internal SEO blog articles
         setReports([
           {
             id: "1",
@@ -28,7 +28,7 @@ export default function MarketOpportunity() {
             date: 'Jul 2026',
             title: 'India Refurbished Smartphone Volumes Grew 13% YoY in H1 2026',
             description: 'India refurbished smartphone volumes grew 13% YoY in H1 2026 as rising component costs and inflation drive strong consumer demand.',
-            url: 'https://counterpointresearch.com/en/insights/india-refurbished-smartphone-volumes-grew-13-percent-yoy-in-h1-2026',
+            url: '/blog/india-refurbished-smartphone-market-grows-13-percent-counterpoint',
             imageUrl: '/article_counterpoint_chart.webp'
           },
           {
@@ -37,7 +37,7 @@ export default function MarketOpportunity() {
             date: 'Sep 02 2026',
             title: 'Costlier new phones drive demand for refurbished devices in India: Report',
             description: "India's refurbished smartphone market is growing rapidly as new devices get costlier, with secondary market demand hitting record highs.",
-            url: 'https://www.business-standard.com/technology/tech-news/refurbished-phones-market-india-new-smartphone-prices-126090200913_1.html',
+            url: '/blog/costlier-new-phones-drive-demand-refurbished-india',
             imageUrl: '/article_bs_costlier.jpg'
           },
           {
@@ -46,7 +46,7 @@ export default function MarketOpportunity() {
             date: 'Apr 21 2025',
             title: '1 in 5 smartphones sold in India is refurbished: Counterpoint Research',
             description: 'Experts point out that many consumers looking to upgrade prefer feature-packed certified refurbished smartphones over entry-level new ones.',
-            url: 'https://www.business-standard.com/industry/news/1-in-5-smartphones-sold-in-india-is-refurbished-counterpoint-research-125042101379_1.html',
+            url: '/blog/one-in-five-smartphones-sold-in-india-is-refurbished',
             imageUrl: '/article_bs_1in5.jpg'
           },
           {
@@ -55,7 +55,7 @@ export default function MarketOpportunity() {
             date: 'July 16, 2026',
             title: 'Rising cost fuels rush for refurbished devices',
             description: "Soaring memory and chip costs push up new smartphone prices, accelerating consumer shift towards certified pre-owned alternatives.",
-            url: 'https://timesofindia.indiatimes.com/business/india-business/rising-cost-fuels-rush-for-refurbished-devices/articleshow/132427518.cms',
+            url: '/blog/rising-costs-fuel-rush-for-refurbished-devices-india',
             imageUrl: '/article_toi_rising.jpg'
           }
         ]);
@@ -145,15 +145,22 @@ export default function MarketOpportunity() {
         </div>
 
         {/* Research & Market Evidence Section Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <h3 className="text-2xl sm:text-[32px] font-black text-[#0f281e] tracking-tight mb-2">
               Research & Market Evidence
             </h3>
-            <p className="text-[15px] text-slate-500">
+            <p className="text-[14px] sm:text-[15px] text-slate-500">
               Explore key reports and articles on the growth and potential of the refurbished smartphone market.
             </p>
           </div>
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200/60 px-4 py-2.5 rounded-full transition-all whitespace-nowrap self-start sm:self-auto"
+          >
+            <span>View All Research & Articles</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {/* 4 Research Cards (Dynamic Image Layout) */}
@@ -162,7 +169,7 @@ export default function MarketOpportunity() {
             <div key={report.id || idx} className="bg-white rounded-[20px] p-4 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow group overflow-hidden flex flex-col relative h-full">
               
               {/* Top Image Column */}
-              <div className="w-full h-[130px] flex-shrink-0 relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100/50 flex items-center justify-center mb-4">
+              <Link href={report.url || '#'} className="w-full h-[130px] flex-shrink-0 relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100/50 flex items-center justify-center mb-4 block">
                 {report.imageUrl ? (
                   <img 
                     src={report.imageUrl} 
@@ -188,12 +195,11 @@ export default function MarketOpportunity() {
                   </div>
                 )}
                 <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.03)] pointer-events-none" />
-              </div>
+              </Link>
 
               {/* Bottom Text Stack */}
               <div className="flex flex-col flex-grow">
                 <div className="flex items-center gap-2 mb-3">
-
                   <div>
                     <h5 className="text-[11px] font-bold text-slate-900 leading-none mb-0.5">{report.publisher}</h5>
                     <p className="text-[10px] text-slate-400 leading-none">{report.date}</p>
@@ -201,8 +207,10 @@ export default function MarketOpportunity() {
                 </div>
                 
                 <div className="flex-grow">
-                  <h4 className="text-[15px] font-black text-slate-900 leading-[1.3] tracking-tight mb-2">
-                    {report.title}
+                  <h4 className="text-[15px] font-black text-slate-900 leading-[1.3] tracking-tight mb-2 group-hover:text-emerald-700 transition-colors">
+                    <Link href={report.url || '#'}>
+                      {report.title}
+                    </Link>
                   </h4>
                   <p className="text-[12px] text-slate-500 leading-relaxed mb-4 line-clamp-3">
                     {report.description}
@@ -211,7 +219,7 @@ export default function MarketOpportunity() {
 
                 <div className="mt-auto">
                   <Link href={report.url || '#'} className="inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-700 hover:text-emerald-800 group-hover:gap-2 transition-all">
-                    Read research <ArrowRight className="w-3.5 h-3.5" />
+                    Read research article <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>

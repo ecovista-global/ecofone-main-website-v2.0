@@ -11,11 +11,11 @@ const tracker = new Map<string, RateLimitRecord>();
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
-    for (const [key, record] of tracker.entries()) {
+    tracker.forEach((record, key) => {
       if (now > record.resetTime) {
         tracker.delete(key);
       }
-    }
+    });
   }, 5 * 60 * 1000);
 }
 
