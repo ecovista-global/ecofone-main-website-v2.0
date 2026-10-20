@@ -110,6 +110,7 @@ export default function Navbar() {
   const links = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
+    { name: 'Our Services', href: '/services' },
     { name: 'Franchise', href: '/franchise' },
     { name: 'Blogs', href: '/blog' },
     { name: 'Contact Us', href: '/contact' },
@@ -127,14 +128,14 @@ export default function Navbar() {
   return (
     <>
       <header className="w-full bg-white/95 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 transition-all duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between relative">
+        <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 h-18 sm:h-20 flex items-center justify-between relative">
           {/* Logo on Left */}
           <Link href="/" onClick={handleLogoClick} className="flex items-center py-1 group">
             <img src="/logo.jpg" alt="EcoFone Logo" className="h-10 sm:h-11 md:h-12 w-auto object-contain bg-transparent p-0 transition-transform group-hover:scale-105" />
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-7 lg:gap-10 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex items-center gap-7 lg:gap-9 absolute left-1/2 -translate-x-1/2">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -149,7 +150,7 @@ export default function Navbar() {
           {/* Desktop Apply Button */}
           <Link
             href="/franchise?scroll=apply"
-            className="hidden sm:inline-flex items-center gap-2 bg-[#0e2a1f] hover:bg-[#071b13] text-white text-[13px] font-bold px-6 py-2.5 rounded-full transition-all duration-200 hover:scale-[1.02] shadow-sm whitespace-nowrap"
+            className="hidden sm:inline-flex items-center gap-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-[13px] font-bold px-6 py-2.5 rounded-full transition-all duration-200 hover:scale-[1.02] shadow-[0_4px_14px_rgba(234,88,12,0.25)] whitespace-nowrap"
           >
             <span>Apply for Franchise</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -200,7 +201,7 @@ export default function Navbar() {
             <div className="border-t border-slate-100 pt-3">
               <Link
                 href="/franchise?scroll=apply"
-                className="w-full text-center bg-[#0e2a1f] hover:bg-[#071b13] text-white text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                className="w-full text-center bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md"
               >
                 <span>Apply for Franchise</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
