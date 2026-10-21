@@ -72,10 +72,10 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 mb-8 sm:mb-10 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight text-[#071f12]">
-            Community <span className="text-[#ea580c]">Gallery.</span>
+            Store Experience <span className="text-[#ea580c]">& Moments.</span>
           </h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-1.5 font-medium max-w-xl">
-            Real moments, grand store openings, and milestones from our franchise partners across India.
+            Take a look inside our certified refurbished experience centers, grand store openings, and partner milestones across India.
           </p>
         </div>
 
@@ -173,7 +173,7 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
             {/* Lightbox Header */}
             <div className="px-6 py-4 border-b border-emerald-900/50 flex items-center justify-between bg-black/40">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                Community Gallery • EcoFone
+                Store Experience • EcoFone
               </span>
               <button
                 onClick={() => setActiveLightboxItem(null)}

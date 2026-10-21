@@ -235,14 +235,14 @@ export default function HomePage() {
         <StoreLocatorSection />
       </ScrollReveal>
 
+      {/* 5.6. EcoFone Store Experience & Moments Gallery */}
+      <ScrollReveal className="w-full">
+        <GallerySection />
+      </ScrollReveal>
+
       {/* 6. Testimonials (Split Reviews) */}
       <ScrollReveal className="w-full border-t border-slate-200/60">
         <SplitReviews />
-      </ScrollReveal>
-
-      {/* 6.5. EcoFone Community Gallery (30-Slot Horizontal Masonry Canvas) */}
-      <ScrollReveal className="w-full">
-        <GallerySection />
       </ScrollReveal>
 
       {/* 7. Interactive FAQs Accordion */}
