@@ -198,9 +198,37 @@ export const api = {
   updateBrandsSection: (payload: any) => apiRequest('cms/brands-section', { method: 'PUT', body: JSON.stringify(payload) }),
 
   // Research Articles
-  getResearchArticles: () => apiRequest('cms/research-articles'),
-  createResearchArticle: (payload: any) => apiRequest('cms/research-articles', { method: 'POST', body: JSON.stringify(payload) }),
-  deleteResearchArticle: (id: string) => apiRequest(`cms/research-articles/${id}`, { method: 'DELETE' }),
+  getResearchArticles: async () => {
+    try {
+      const res = await fetch('/api/research-articles');
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    try {
+      const res2 = await fetch('/api/v1/cms/research-articles');
+      if (res2.ok) return await res2.json();
+    } catch (e) {}
+    return [];
+  },
+  createResearchArticle: async (payload: any) => {
+    try {
+      const res = await fetch('/api/research-articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest('cms/research-articles', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  deleteResearchArticle: async (id: string) => {
+    try {
+      const res = await fetch(`/api/research-articles/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest(`cms/research-articles/${id}`, { method: 'DELETE' });
+  },
 
   // Careers & Job Openings CMS
   getCareerJobs: async () => {
