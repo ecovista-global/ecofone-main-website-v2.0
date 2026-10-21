@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, X, Maximize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { DEFAULT_GALLERY_ITEMS, GalleryItemData } from "@/types/gallery";
 
 interface GallerySectionProps {
@@ -72,10 +72,10 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 mb-8 sm:mb-10 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black tracking-tight text-[#071f12]">
-            Store Experience <span className="text-[#ea580c]">& Moments.</span>
+            Life at EcoFone <span className="text-[#ea580c]">& Moments.</span>
           </h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-1.5 font-medium max-w-xl">
-            Take a look inside our certified refurbished experience centers, grand store openings, and partner milestones across India.
+            A glimpse inside our company culture, head office life, team celebrations, partner summits, and certified stores across India.
           </p>
         </div>
 
@@ -139,21 +139,6 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
                   className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   unoptimized
                 />
-
-                {/* Subtle Hover Gradient & Caption (Only visible on hover, clean by default) */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 sm:p-5 pointer-events-none">
-                  <p className="text-white text-xs sm:text-sm font-bold tracking-tight drop-shadow line-clamp-2 leading-snug">
-                    {cleanCaption || "EcoFone Experience Center"}
-                  </p>
-                  <span className="text-[11px] text-emerald-300 font-semibold mt-1 flex items-center gap-1">
-                    Click to view full photo →
-                  </span>
-                </div>
-
-                {/* Expand Corner Hint on Hover */}
-                <div className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-black/40 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                  <Maximize2 className="w-3.5 h-3.5" />
-                </div>
               </div>
             );
           })}
@@ -173,7 +158,7 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
             {/* Lightbox Header */}
             <div className="px-6 py-4 border-b border-emerald-900/50 flex items-center justify-between bg-black/40">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                Store Experience • EcoFone
+                Life at EcoFone • Moments & Culture
               </span>
               <button
                 onClick={() => setActiveLightboxItem(null)}
@@ -201,7 +186,7 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
                   {activeLightboxItem.caption.replace(/^SIZE:[^|]+\|/, "")}
                 </h4>
                 <p className="text-xs text-slate-400">
-                  EcoFone Refurbished Smartphone Network • Uttar Pradesh & Pan-India
+                  EcoFone Network • Team, Culture, Partner Summits & Stores
                 </p>
               </div>
 

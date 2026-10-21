@@ -689,11 +689,11 @@ export default function GalleryManager() {
             </div>
             
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Store Moments & Community Gallery
+              Moments & Company Life Gallery
             </h2>
             
             <p className="text-slate-300 text-sm mt-1 max-w-2xl font-normal leading-relaxed">
-              Drag and drop to rearrange photos on the horizontal masonry canvas. Double-click any block or empty slot to upload photos, adjust block sizes, or crop images.
+              Drag and drop to rearrange photos on the horizontal masonry canvas. Double-click any block or empty slot to upload company photos, team culture, milestones, or store pictures.
             </p>
           </div>
 
@@ -1032,7 +1032,7 @@ export default function GalleryManager() {
                   type="text"
                   value={formCaption}
                   onChange={(e) => setFormCaption(e.target.value)}
-                  placeholder="e.g. Grand Opening Ceremony of Hazratganj Experience Center"
+                  placeholder="e.g. Annual Team Offsite, Headquarters Launch, or Saket Experience Center"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   required
                 />

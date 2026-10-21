@@ -235,7 +235,7 @@ export default function HomePage() {
         <StoreLocatorSection />
       </ScrollReveal>
 
-      {/* 5.6. EcoFone Store Experience & Moments Gallery */}
+      {/* 5.6. EcoFone Life, Culture & Moments Gallery */}
       <ScrollReveal className="w-full">
         <GallerySection />
       </ScrollReveal>
