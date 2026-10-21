@@ -380,5 +380,43 @@ export class CmsController {
   async deleteResearchArticle(@Param('id') id: string) {
     return this.cmsService.deleteResearchArticle(id);
   }
+
+  // --- Gallery Endpoints ---
+  @Get('gallery')
+  async getGallery() {
+    return this.cmsService.getGalleryItems();
+  }
+
+  @Post('gallery')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  async createGalleryItem(@Body() body: any) {
+    return this.cmsService.createGalleryItem(body);
+  }
+
+  @Put('gallery/reorder')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  async reorderGalleryItems(@Body() body: { items: { id: string; display_order: number }[] }) {
+    if (!body || !Array.isArray(body.items)) {
+      throw new BadRequestException('Invalid items array');
+    }
+    return this.cmsService.reorderGalleryItems(body.items);
+  }
+
+  @Put('gallery/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  async updateGalleryItem(@Param('id') id: string, @Body() body: any) {
+    return this.cmsService.updateGalleryItem(id, body);
+  }
+
+  @Delete('gallery/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  async deleteGalleryItem(@Param('id') id: string) {
+    return this.cmsService.deleteGalleryItem(id);
+  }
 }
+
 

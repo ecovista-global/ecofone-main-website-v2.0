@@ -9,6 +9,7 @@ import BrandsManager from './components/brands-manager';
 import ResearchManager from './components/research-manager';
 import CareersManager from './components/careers-manager';
 import StoresManager from './components/stores-manager';
+import GalleryManager from './components/gallery-manager';
 
 interface FranchiseApp {
   id: string;
@@ -280,14 +281,14 @@ export default function AdminDashboardPage() {
   const [subAdminError, setSubAdminError] = useState('');
   const [subAdminSuccess, setSubAdminSuccess] = useState('');
   const [newAdminPermissions, setNewAdminPermissions] = useState<string[]>(['franchise', 'contact']);
-  const [allowedPermissions, setAllowedPermissions] = useState<string[]>(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'services', 'brands', 'research', 'careers']);
+  const [allowedPermissions, setAllowedPermissions] = useState<string[]>(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'services', 'brands', 'research', 'careers']);
   
   const [adminLoginError, setAdminLoginError] = useState('');
   const [adminPhoneDisplay, setAdminPhoneDisplay] = useState('+91 99199 65499');
   const [adminEmailDisplay, setAdminEmailDisplay] = useState('business@ecofone.co.in');
 
   // Active Tab & Sidebar mobile states
-  const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers'>('franchise');
+  const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'gallery' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers'>('franchise');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Revenue Streamdesk CMS state
@@ -625,7 +626,7 @@ export default function AdminDashboardPage() {
               if (payload.email) setAdminEmailDisplay(payload.email);
 
               if (storedRole === 'master') {
-                setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+                setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
               } else {
                 // Permissions are embedded in the JWT for sub-admins
                 const permissions = payload.permissions || ['franchise', 'contact'];
@@ -644,7 +645,7 @@ export default function AdminDashboardPage() {
         setAdminRole(storedRole);
         
         if (storedRole === 'master') {
-          setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+          setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
         } else {
           try {
             const tokenParts = token.split('.');
@@ -2071,7 +2072,7 @@ export default function AdminDashboardPage() {
       localStorage.setItem('ecofone_admin_password', inputPassword);
 
       setAdminRole('master');
-      setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+      setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
       setIsAdmin(true);
       setAdminPasswordInput('');
       setAdminLoginError('');
@@ -2532,6 +2533,20 @@ export default function AdminDashboardPage() {
                 <span>Manage Outlets ({stores.length})</span>
               </button>
             )}
+            {allowedPermissions.includes('gallery') && (
+              <button
+                onClick={() => { setActiveTab('gallery'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'gallery'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">🖼️</span>
+                <span>Moments Gallery</span>
+              </button>
+            )}
+
             {allowedPermissions.includes('team') && (
               <button
                 onClick={() => { setActiveTab('team'); setIsSidebarOpen(false); }}
@@ -2694,7 +2709,7 @@ export default function AdminDashboardPage() {
             <span className="hidden sm:inline shrink-0">EcoFone Console</span>
             <span className="text-slate-600 hidden sm:inline shrink-0">/</span>
             <span className="text-white capitalize truncate">
-              {activeTab === 'stores' ? 'outlets' : activeTab === 'franchise' ? 'franchise applications' : activeTab === 'contact' ? 'contact inquiries' : activeTab === 'reviews' ? 'reviews moderation' : activeTab === 'logs' ? 'export logs' : activeTab === 'certificates' ? 'certificates generator' : activeTab === 'services' ? 'Revenue Desk CMS' : activeTab === 'brands' ? 'Top Brands CMS' : 'security settings'}
+              {activeTab === 'gallery' ? 'Moments Gallery CMS' : activeTab === 'stores' ? 'outlets' : activeTab === 'franchise' ? 'franchise applications' : activeTab === 'contact' ? 'contact inquiries' : activeTab === 'reviews' ? 'reviews moderation' : activeTab === 'logs' ? 'export logs' : activeTab === 'certificates' ? 'certificates generator' : activeTab === 'services' ? 'Revenue Desk CMS' : activeTab === 'brands' ? 'Top Brands CMS' : 'security settings'}
             </span>
           </div>
 
@@ -3057,6 +3072,9 @@ export default function AdminDashboardPage() {
 
             {/* C. OUTLET REGISTERS & STORE MANAGER */}
             {activeTab === 'stores' && <StoresManager />}
+
+            {/* C.2 GALLERY CMS & DRAG-AND-DROP CANVAS */}
+            {activeTab === 'gallery' && <GalleryManager />}
 
             {/* D. SYSTEM LOGS (EXPORT HISTORY) VIEW */}
             {activeTab === 'logs' && (

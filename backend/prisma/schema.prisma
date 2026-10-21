@@ -348,3 +348,16 @@ model ResearchArticle {
   imageUrl    String
   createdAt   DateTime @default(now())
 }
+
+model GalleryItem {
+  id            String   @id @default(uuid())
+  type          String   @default("image") // 'image' | 'video'
+  media_url     String
+  caption       String?  // Can include prefix "SIZE:1x2|Caption text"
+  display_order Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  @@map("gallery_items")
+}
+

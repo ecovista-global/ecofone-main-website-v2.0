@@ -295,5 +295,61 @@ export const api = {
     });
     return await res.json();
   },
+
+  // Gallery CMS
+  getGallery: async () => {
+    try {
+      const res = await fetch('/api/gallery');
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return [];
+  },
+  createGalleryItem: async (data: any) => {
+    let res: Response;
+    if (data instanceof FormData) {
+      res = await fetch('/api/admin/gallery', {
+        method: 'POST',
+        body: data,
+      });
+    } else {
+      res = await fetch('/api/admin/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    }
+    return await res.json();
+  },
+  reorderGallery: async (items: { id: string; display_order: number }[]) => {
+    const res = await fetch('/api/admin/gallery/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    return await res.json();
+  },
+  updateGalleryItem: async (id: string, data: any) => {
+    let res: Response;
+    if (data instanceof FormData) {
+      res = await fetch(`/api/admin/gallery/${id}`, {
+        method: 'PUT',
+        body: data,
+      });
+    } else {
+      res = await fetch(`/api/admin/gallery/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    }
+    return await res.json();
+  },
+  deleteGalleryItem: async (id: string) => {
+    const res = await fetch(`/api/admin/gallery/${id}`, {
+      method: 'DELETE',
+    });
+    return await res.json();
+  },
 };
+
 

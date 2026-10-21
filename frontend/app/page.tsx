@@ -12,6 +12,7 @@ import StoreLocatorSection from "../components/store-locator-section";
 import WhatMakesDifferent from "../components/what-makes-different";
 import MarketOpportunity from "../components/market-opportunity";
 import StoreGalleryInteractions from "../components/store-gallery-interactions";
+import GallerySection from "../components/gallery-section";
 import RevenueStreamdesk from "../components/revenue-streamdesk";
 
 const calculateRoiMetrics = (investAmt: number, isFico: boolean) => {
@@ -243,6 +244,11 @@ export default function HomePage() {
       {/* 6.5. Store Owner Happy Interactions & Moments Gallery */}
       <ScrollReveal className="w-full">
         <StoreGalleryInteractions />
+      </ScrollReveal>
+
+      {/* 6.6. Dynamic 30-Slot Horizontal Masonry Canvas Gallery */}
+      <ScrollReveal className="w-full">
+        <GallerySection />
       </ScrollReveal>
 
       {/* 7. Interactive FAQs Accordion */}
