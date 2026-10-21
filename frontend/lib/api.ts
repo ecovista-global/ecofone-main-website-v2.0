@@ -230,6 +230,45 @@ export const api = {
     return apiRequest(`cms/research-articles/${id}`, { method: 'DELETE' });
   },
 
+  // Website Core Pages CMS
+  getCmsContent: async () => {
+    try {
+      const res = await fetch('/api/cms/content');
+      if (res.ok) {
+        const data = await res.json();
+        return data.data;
+      }
+    } catch (e) {
+      console.error('Error fetching CMS content:', e);
+    }
+    return null;
+  },
+  updateCmsContent: async (payload: any) => {
+    try {
+      const res = await fetch('/api/cms/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+  uploadCmsMedia: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/cms/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
   // Careers & Job Openings CMS
   getCareerJobs: async () => {
     try {

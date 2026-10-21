@@ -1,0 +1,349 @@
+{
+  "hero": {
+    "badge": "FROM UTTAR PRADESH TO ALL OF INDIA"
+  },
+  "investorModel": {
+    "headlinePrefix": "Invest Today. Build ",
+    "headlineHighlight": "What's Next.",
+    "subheading": "A structured franchise opportunity backed by a trusted brand, strong unit economics and end-to-end support — to tap into India's growing refurbished smartphone market.",
+    "steps": [
+      {
+        "id": "step-1",
+        "number": "01",
+        "title": "Capital Investment",
+        "description": "₹20-25 Lakhs initial capital covers store setup, corporate branding and seed inventory."
+      },
+      {
+        "id": "step-2",
+        "number": "02",
+        "title": "Store Setup",
+        "description": "EcoFone team manages turnkey interior buildout, POS installation and tech diagnostics setup."
+      },
+      {
+        "id": "step-3",
+        "number": "03",
+        "title": "We Operate",
+        "description": "Trained staff, supply chain replenishment and digital marketing run by corporate team."
+      },
+      {
+        "id": "step-4",
+        "number": "04",
+        "title": "You Earn",
+        "description": "Predictable monthly cashflows with 3% monthly sales share or 1.5% fixed investment return."
+      }
+    ],
+    "unitEconomics": [
+      {
+        "id": "ue-1",
+        "label": "TOTAL INVESTMENT",
+        "value": "₹20 – 25 Lakhs",
+        "subtext": "Complete setup & seed inventory"
+      },
+      {
+        "id": "ue-2",
+        "label": "STORE FORMAT",
+        "value": "100 – 150 Sq. Ft.",
+        "subtext": "High footfall retail location"
+      },
+      {
+        "id": "ue-3",
+        "label": "EARNING STRUCTURE (FICO)",
+        "value": "3% on total sales",
+        "subtext": "or 1.5% of investment / month"
+      },
+      {
+        "id": "ue-4",
+        "label": "TARGET PAYBACK PERIOD",
+        "value": "20 – 24 Months",
+        "subtext": "Industry-leading recovery"
+      }
+    ]
+  },
+  "revenueStreamdesk": {
+    "tag": "REVENUE STREAMDESK",
+    "titlePrefix": "Earn from ",
+    "buyText": "Buy",
+    "sellText": "Sell",
+    "repairText": "Repair",
+    "titleSuffix": " Services",
+    "subtitle": "EcoFone ensures steady cash flows by combining three high-margin consumer recommerce revenue channels in one single retail outlet.",
+    "warrantyCard": {
+      "tag": "6-Month Comprehensive Warranty",
+      "title": "Guaranteed Device Reliability",
+      "description": "Every certified phone passes our rigorous 32-point diagnostics with full warranty backing, driving unmatched consumer repeat trust."
+    },
+    "replacementCard": {
+      "tag": "3-Day Hassle-Free Replacement",
+      "title": "Customer Confidence First",
+      "description": "Zero-questions replacement guarantee eliminates customer hesitation and accelerates in-store conversions across all flagship models."
+    },
+    "serviceCards": [
+      {
+        "id": "svc-1",
+        "number": "01",
+        "title": "Buy Used Smartphones",
+        "tagline": "Instant cash evaluation & buyback",
+        "description": "Our proprietary AI pricing diagnostic engine evaluates second-hand phones in 3 minutes, giving walk-ins instant cash and stocking your local inventory.",
+        "linkText": "Know More",
+        "linkUrl": "/services#buy",
+        "theme": "green",
+        "iconType": "phone",
+        "imageUrl": "/card_buy_phone_new.jpg"
+      },
+      {
+        "id": "svc-2",
+        "number": "02",
+        "title": "Sell Certified Refurbished",
+        "tagline": "Premium devices with 6-month warranty",
+        "description": "Stock top brands like Apple, Samsung and OnePlus tested across 32 hardware checks, complete with warranty seals and premium brand packaging.",
+        "linkText": "Know More",
+        "linkUrl": "/services#sell",
+        "theme": "orange",
+        "iconType": "rupee",
+        "imageUrl": "/card_sell_phone_new.jpg"
+      },
+      {
+        "id": "svc-3",
+        "number": "03",
+        "title": "Repair & Accessories",
+        "tagline": "Certified repairs and original gear",
+        "description": "High-margin on-spot display replacements, battery swaps, premium tempered glasses, fast GaN chargers, and protective cases.",
+        "linkText": "Know More",
+        "linkUrl": "/services#repair",
+        "theme": "green",
+        "iconType": "gear",
+        "imageUrl": "/card_accessories_new.jpg"
+      }
+    ]
+  },
+  "whatMakesDifferent": {
+    "headline": "What Makes EcoFone Different",
+    "subheading": "A resilient business model engineered for retail profitability, brand security, and customer trust.",
+    "cards": [
+      {
+        "id": "wmd-1",
+        "title": "Certified Quality",
+        "desc": "Every device undergoes a 32-point multi-level diagnostic check with certification and warranty support.",
+        "iconName": "BadgeCheck",
+        "color": "emerald"
+      },
+      {
+        "id": "wmd-2",
+        "title": "Multiple Revenue Streams",
+        "desc": "Combine Buy, Sell and Repair services with accessories and upgrade programs to ensure steady income.",
+        "iconName": "RefreshCw",
+        "color": "orange"
+      },
+      {
+        "id": "wmd-3",
+        "title": "FICO Option",
+        "desc": "Flexible investment model with company support for staffing, POS setup and store operations.",
+        "iconName": "FileText",
+        "color": "emerald"
+      },
+      {
+        "id": "wmd-4",
+        "title": "Corporate Support",
+        "desc": "Get end-to-end support from site selection to launch, along with digital marketing and training programs.",
+        "iconName": "Settings",
+        "color": "orange"
+      },
+      {
+        "id": "wmd-5",
+        "title": "6-Month Warranty",
+        "desc": "All certified devices come with a comprehensive 6-month warranty for complete peace of mind.",
+        "iconName": "ShieldCheck",
+        "color": "emerald"
+      },
+      {
+        "id": "wmd-6",
+        "title": "3-Day Replacement",
+        "desc": "If you're not satisfied, return the device within 3 days for an exchange or upgrade — no questions asked.",
+        "iconName": "Clock",
+        "color": "orange"
+      }
+    ]
+  },
+  "marketStats": {
+    "headline": "Why Invest in the Refurbished Smartphone Market?",
+    "subheading": "India's smartphone market is steadily moving towards refurbished, pre-owned and recommerce models — creating a growing opportunity for organised retail.",
+    "stats": [
+      {
+        "id": "stat-1",
+        "title": "13% YoY",
+        "description": "India refurbished smartphone volume growth, H1 2026",
+        "sourceLabel": "Counterpoint Research",
+        "sourceUrl": "https://counterpointresearch.com"
+      },
+      {
+        "id": "stat-2",
+        "title": "~20%",
+        "description": "organized share of India's refurbished smartphone market",
+        "sourceLabel": "Financial Express",
+        "sourceUrl": "https://www.financialexpress.com"
+      },
+      {
+        "id": "stat-3",
+        "title": "15.6% CAGR",
+        "description": "India used & refurbished electronics market, FY25 – FY30",
+        "sourceLabel": "Market Research Future",
+        "sourceUrl": "https://www.marketresearchfuture.com"
+      }
+    ]
+  },
+  "partnerStories": [
+    {
+      "id": "story-1",
+      "name": "Suresh Kumar",
+      "role": "Franchise Store Owner",
+      "location": "Lucknow Hazratganj Outlet",
+      "image": "/gallery_owner_launch.jpg",
+      "videoTitle": "Grand Store Launch & Owner Journey",
+      "quote": "\"From store layout planning to initial inventory allocation and digital marketing, EcoFone supported us end-to-end. We achieved steady profitability within our first quarter!\"",
+      "rating": 5,
+      "tag": "Store Launch",
+      "badge": "EcoFone Partner",
+      "videoEmbedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      "id": "story-2",
+      "name": "Rahul & Priya Verma",
+      "role": "Co-Founders & Partners",
+      "location": "New Delhi Saket Outlet",
+      "image": "/gallery_ribbon_opening.jpg",
+      "videoTitle": "Opening Day Experience & Ribbon Cutting",
+      "quote": "\"The grand opening ceremony brought huge local excitement. Customers love the 32-point diagnostics warranty backing. Footfall has grown 40% month-on-month.\"",
+      "rating": 5,
+      "tag": "Grand Opening",
+      "badge": "EcoFone Partner",
+      "videoEmbedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      "id": "story-3",
+      "name": "Vikram Singh",
+      "role": "Franchise Partner",
+      "location": "Jaipur Tonk Road Store",
+      "image": "/gallery_customer_handover.jpg",
+      "videoTitle": "Customer Handover & Buyback Experience",
+      "quote": "\"Instant trade-in buybacks combined with certified refurbished sales creates multiple revenue streams every single day. The customer trust in EcoFone is unmatched.\"",
+      "rating": 5,
+      "tag": "Customer Delight",
+      "badge": "EcoFone Partner",
+      "videoEmbedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      "id": "story-4",
+      "name": "Rohit & Ananya",
+      "role": "Operations Lead & Partner",
+      "location": "Mumbai Andheri Store",
+      "image": "/gallery_partner_meet.jpg",
+      "videoTitle": "Diagnostics & Customer Handover",
+      "quote": "\"Operating an EcoFone store is streamlined and rewarding. Our tech diagnostic testing kiosk gives walk-in buyers instant transparency.\"",
+      "rating": 5,
+      "tag": "Tech Diagnostics",
+      "badge": "EcoFone Partner",
+      "videoEmbedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    }
+  ],
+  "testimonials": {
+    "investors": [
+      {
+        "id": "inv-1",
+        "authorName": "Amit Sharma",
+        "subtitle": "Franchise Partner, Lucknow",
+        "comment": "The EcoFone franchise model is well structured and highly supportive. From setup to operations, the team has been with us at every step. A truly trustworthy and future-ready business.",
+        "rating": 5,
+        "initials": "AS",
+        "status": "Active"
+      },
+      {
+        "id": "inv-2",
+        "authorName": "Priyank Khanna",
+        "subtitle": "Franchise Partner, Delhi",
+        "comment": "Great brand, strong demand and excellent support system. EcoFone makes it easy to run a profitable refurbished device business in a growing market.",
+        "rating": 5,
+        "initials": "PK",
+        "status": "Active"
+      },
+      {
+        "id": "inv-3",
+        "authorName": "Ritesh Desai",
+        "subtitle": "Franchise Partner, Ahmedabad",
+        "comment": "What impressed me the most is their transparency and operational support. EcoFone is not just a business, it's a long-term opportunity.",
+        "rating": 5,
+        "initials": "RD",
+        "status": "Active"
+      }
+    ],
+    "customers": [
+      {
+        "id": "cust-1",
+        "authorName": "Rohan Mehta",
+        "subtitle": "Verified Purchase",
+        "comment": "Bought a Samsung Galaxy S22 from EcoFone. The device was in excellent condition with original accessories and a full 6-month warranty. Totally worth it!",
+        "rating": 5,
+        "initials": "RM",
+        "status": "Active"
+      },
+      {
+        "id": "cust-2",
+        "authorName": "Sneha Nair",
+        "subtitle": "Verified Purchase",
+        "comment": "Amazing experience! The phone looks and works like new. Great pricing and very professional service.",
+        "rating": 5,
+        "initials": "SN",
+        "status": "Active"
+      },
+      {
+        "id": "cust-3",
+        "authorName": "Aman Verma",
+        "subtitle": "Verified Purchase",
+        "comment": "EcoFone made upgrading my phone so easy. Genuine products, quick delivery and helpful support. Highly recommended!",
+        "rating": 5,
+        "initials": "AV",
+        "status": "Active"
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "id": "faq-1",
+      "q": "What is the typical setup timeline for an EcoFone franchise outlet?",
+      "a": "On average, a franchise outlet takes 30 to 45 business days to go live. This includes location demographic surveys, corporate interior design setups, POS installation, staff onboarding, and initial inventory seed shipments."
+    },
+    {
+      "id": "faq-2",
+      "q": "What is the difference between FICO and FIFO business options?",
+      "a": "Under FICO (Franchise Investor, Company Operated), EcoFone handles the complete day-to-day operation, staffing, and store management while you receive steady net margin shares. Under FIFO (Franchise Investor, Franchise Operated), you manage local store retail operations directly with complete wholesale stock support from us."
+    },
+    {
+      "id": "faq-3",
+      "q": "How does the CRM lead pipeline integration work?",
+      "a": "When local consumers submit device trade-in requests, contact forms, or franchise applications online, queries are automatically pushed to your localized store CRM lead desk. This directs ready buyers and sellers to your physical retail storefront."
+    }
+  ],
+  "siteSettings": {
+    "registeredAddress": "505, JB Metro Heights, 5th Floor, Transport Nagar Metro Station, Kanpur Road, Lucknow – 226012",
+    "contactEmail": "business@ecofone.co.in",
+    "supportEmail": "future@ecofone.co.in",
+    "contactPhone": "+91 99199 65499",
+    "whatsappNumber": "+91 99199 65499",
+    "googleMapsEmbed": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3561.428416629707!2d80.879799!3d26.794464!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399bfd791242d5a3%3A0xb3bc872a08852e69!2sJB%20Metro%20Heights!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin",
+    "facebook": "https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr",
+    "instagram": "https://www.instagram.com/ecofone_official",
+    "linkedin": "https://www.linkedin.com/company/ecovista-private-limited/",
+    "twitter": "https://x.com/ecofonel82115",
+    "sectionVisibility": {
+      "hero": true,
+      "topBrands": true,
+      "investorModel": true,
+      "revenueStreamdesk": true,
+      "whatMakesDifferent": true,
+      "marketOpportunity": true,
+      "storeLocator": true,
+      "splitReviews": true,
+      "partnerStories": true,
+      "faqs": true
+    }
+  }
+}

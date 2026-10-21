@@ -378,36 +378,36 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
   let lastGroupDate = '';
 
   return (
-    <div className="space-y-6 text-slate-100">
+    <div className="space-y-6 text-slate-800">
 
       {/* Toast Alert */}
       {message && (
-        <div className={`p-4 rounded-xl flex items-center justify-between text-sm font-semibold transition-all shadow-lg ${
+        <div className={`p-4 rounded-xl flex items-center justify-between text-sm font-semibold transition-all shadow-sm ${
           message.type === 'success' 
-            ? 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-300' 
-            : 'bg-rose-950/90 border border-rose-500/40 text-rose-300'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+            : 'bg-rose-50 border border-rose-200 text-rose-800'
         }`}>
           <div className="flex items-center gap-2.5">
-            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-rose-400" />}
+            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-[#059669]" /> : <AlertCircle className="w-5 h-5 text-rose-600" />}
             <span>{message.text}</span>
           </div>
-          <button onClick={() => setMessage(null)} className="text-slate-400 hover:text-white">
+          <button onClick={() => setMessage(null)} className="text-slate-400 hover:text-slate-600">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Top Header Bar & Primary Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
         <div>
           <nav className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
             <span>EcoFone Console</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-emerald-400">TechByte Blog Management</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-[#059669]">TechByte Blog Management</span>
           </nav>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <span>TechByte Editorial Platform</span>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] uppercase tracking-widest">
               Live Dynamic CMS
             </span>
           </h1>
@@ -417,7 +417,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
           <Link
             href="/blog"
             target="_blank"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#131b2e] hover:bg-[#1a253d] border border-slate-700/80 text-xs font-bold text-slate-300 hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 transition-all shadow-sm"
           >
             <span>View Public /blog</span>
             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
@@ -425,7 +425,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
 
           <button
             onClick={handleOpenNewComposer}
-            className="bg-[#10b981] hover:bg-[#059669] text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+            className="bg-[#059669] hover:bg-[#047857] text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all active:scale-[0.98]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>+ Create New Blog</span>
@@ -436,44 +436,44 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
       {/* 4-Card KPI Summary Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* KPI 1: Total Articles */}
-        <div className="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Total Articles</span>
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl sm:text-3xl font-extrabold text-white">{totalArticles}</p>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#0d2822] text-[#10b981] border border-[#10b981]/30">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{totalArticles}</p>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-[#059669] border border-emerald-200">
               Published ({publishedArticles})
             </span>
           </div>
         </div>
 
         {/* KPI 2: Featured / Hero */}
-        <div className="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Featured / Hero</span>
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{heroCount || 1}</p>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#0d2822] text-[#10b981] border border-[#10b981]/30">
+            <p className="text-2xl sm:text-3xl font-extrabold text-[#059669]">{heroCount || 1}</p>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-[#059669] border border-emerald-200">
               Hero Slot
             </span>
           </div>
         </div>
 
         {/* KPI 3: Drafts / Scheduled */}
-        <div className="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Drafts / Scheduled</span>
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl sm:text-3xl font-extrabold text-amber-400">{draftArticles}</p>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#2a2012] text-[#f59e0b] border border-[#f59e0b]/30">
+            <p className="text-2xl sm:text-3xl font-extrabold text-amber-600">{draftArticles}</p>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
               Pending
             </span>
           </div>
         </div>
 
         {/* KPI 4: Categories Active */}
-        <div className="bg-[#131b2e] border border-[#1e293b] rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block">Categories Active</span>
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl sm:text-3xl font-extrabold text-white">{activeCategoriesCount} Sections</p>
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#0d2822] text-[#10b981] border border-[#10b981]/30">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{activeCategoriesCount} Sections</p>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
               TechByte
             </span>
           </div>
@@ -481,15 +481,15 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
       </div>
 
       {/* Main Blog Registry Table Container */}
-      <div className="bg-[#111726] border border-[#1e293b] rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
         
         {/* Table Top Filter Bar */}
-        <div className="pb-4 border-b border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="pb-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest">
               TechByte Article Registry
             </h3>
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">
+            <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">
               {filteredBlogs.length} Total
             </span>
           </div>
@@ -503,45 +503,45 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                 placeholder="Search by title or author..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#090D16] border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-52 sm:w-64"
+                className="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white w-52 sm:w-64"
               />
             </div>
 
             {/* Category Filter */}
-            <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-3 py-1.5">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Category:</span>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Category:</span>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-transparent text-emerald-400 font-extrabold text-xs focus:outline-none cursor-pointer"
+                className="bg-transparent text-[#059669] font-bold text-xs focus:outline-none cursor-pointer"
               >
-                <option value="ALL" className="bg-[#111827] text-white">All Articles</option>
-                <option value="Hero Main Featured" className="bg-[#111827] text-emerald-400">Hero Featured</option>
-                <option value="Trending" className="bg-[#111827] text-white">Trending</option>
-                <option value="Popular News" className="bg-[#111827] text-white">Popular News</option>
-                <option value="Tips & Tricks" className="bg-[#111827] text-white">Tips & Tricks</option>
-                <option value="Tech News" className="bg-[#111827] text-white">Tech News</option>
-                <option value="First Impressions" className="bg-[#111827] text-white">First Impressions</option>
+                <option value="ALL" className="bg-white text-slate-800">All Articles</option>
+                <option value="Hero Main Featured" className="bg-white text-[#059669]">Hero Featured</option>
+                <option value="Trending" className="bg-white text-slate-800">Trending</option>
+                <option value="Popular News" className="bg-white text-slate-800">Popular News</option>
+                <option value="Tips & Tricks" className="bg-white text-slate-800">Tips & Tricks</option>
+                <option value="Tech News" className="bg-white text-slate-800">Tech News</option>
+                <option value="First Impressions" className="bg-white text-slate-800">First Impressions</option>
               </select>
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-3 py-1.5">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Status:</span>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-emerald-400 font-extrabold text-xs focus:outline-none cursor-pointer"
+                className="bg-transparent text-[#059669] font-bold text-xs focus:outline-none cursor-pointer"
               >
-                <option value="ALL" className="bg-[#111827] text-white">All Statuses</option>
-                <option value="PUBLISHED" className="bg-[#111827] text-emerald-400">Published</option>
-                <option value="DRAFT" className="bg-[#111827] text-amber-400">Draft</option>
+                <option value="ALL" className="bg-white text-slate-800">All Statuses</option>
+                <option value="PUBLISHED" className="bg-white text-[#059669]">Published</option>
+                <option value="DRAFT" className="bg-white text-amber-600">Draft</option>
               </select>
             </div>
 
             <button
               onClick={fetchBlogs}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors"
+              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors"
               title="Refresh Registry"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -555,14 +555,14 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
             Loading articles registry from storage...
           </div>
         ) : filteredBlogs.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 text-xs">
+          <div className="py-16 text-center text-slate-400 text-xs">
             No articles match your search or filter criteria.
           </div>
         ) : (
           <div className="overflow-x-auto text-[11px] sm:text-xs">
-            <table className="w-full text-left text-slate-300 min-w-[780px]">
+            <table className="w-full text-left text-slate-700 min-w-[780px]">
               <thead>
-                <tr className="border-b border-slate-800/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider bg-slate-50/50">
                   <th className="py-3 px-3">Article / Details</th>
                   <th className="py-3 px-3">Category / Placement</th>
                   <th className="py-3 px-3 text-center">Status</th>
@@ -570,7 +570,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-slate-100">
                 {filteredBlogs.map((blog) => {
                   const blogDate = blog.date || (blog.publishedAt ? new Date(blog.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent');
                   const showDateHeader = blogDate !== lastGroupDate;
@@ -581,18 +581,18 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                   return (
                     <React.Fragment key={blog.id}>
                       {showDateHeader && (
-                        <tr className="bg-slate-900/40">
-                          <td colSpan={5} className="py-2 px-3 font-extrabold text-[10px] text-emerald-400 uppercase tracking-widest border-y border-slate-800/80">
+                        <tr className="bg-slate-50/80">
+                          <td colSpan={5} className="py-2 px-3 font-extrabold text-[10px] text-[#059669] uppercase tracking-widest border-y border-slate-200">
                             📅 {blogDate}
                           </td>
                         </tr>
                       )}
-                      <tr className="hover:bg-slate-900/40 transition-colors group">
+                      <tr className="hover:bg-slate-50/80 transition-colors group">
                         
                         {/* 1. Article / Details Column */}
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-16 h-10 rounded-md overflow-hidden bg-slate-800 border border-slate-700/60 shrink-0 relative">
+                            <div className="w-16 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative shadow-sm">
                               <img
                                 src={blog.imageUrl || '/techbyte_oneplus16_hero.jpg'}
                                 alt={blog.title}
@@ -601,15 +601,15 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-bold text-white text-sm line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                              <h4 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-[#059669] transition-colors">
                                 {blog.title}
                               </h4>
-                              <p className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                                <span className="text-slate-300 font-semibold">{blog.author?.name || 'EcoFone Admin'}</span>
-                                <span className="text-slate-600">•</span>
-                                <span className="text-slate-500 font-mono text-[10px]">/{blog.slug}</span>
-                                <span className="text-slate-600">•</span>
-                                <span className="text-slate-400">{blog.readingTime || '4 min read'}</span>
+                              <p className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                <span className="text-slate-700 font-semibold">{blog.author?.name || 'EcoFone Admin'}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-400 font-mono text-[10px]">/{blog.slug}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-500">{blog.readingTime || '4 min read'}</span>
                               </p>
                             </div>
                           </div>
@@ -617,7 +617,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
 
                         {/* 2. Category / Placement Column */}
                         <td className="py-3 px-3">
-                          <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800/90 text-slate-300 border border-slate-700/80">
+                          <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
                             {blog.placement || blog.category}
                           </span>
                         </td>
@@ -626,8 +626,8 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                         <td className="py-3 px-3 text-center">
                           <span className={`inline-block text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                             isPublished
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
                           }`}>
                             {isPublished ? '● PUBLISHED' : '○ DRAFT'}
                           </span>
@@ -638,10 +638,10 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                           <select
                             value={isPublished ? 'PUBLISHED' : 'DRAFT'}
                             onChange={(e) => handleQuickStatusChange(blog, e.target.value as any)}
-                            className="bg-[#090D16] border border-slate-800 text-[10px] font-extrabold text-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                            className="bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-700 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 cursor-pointer"
                           >
-                            <option value="PUBLISHED" className="bg-[#111827] text-emerald-400">PUBLISHED ▾</option>
-                            <option value="DRAFT" className="bg-[#111827] text-amber-400">DRAFT ▾</option>
+                            <option value="PUBLISHED" className="bg-white text-emerald-700 font-bold">PUBLISHED ▾</option>
+                            <option value="DRAFT" className="bg-white text-amber-700 font-bold">DRAFT ▾</option>
                           </select>
                         </td>
 
@@ -651,7 +651,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                             {/* Edit Button */}
                             <button
                               onClick={() => handleOpenEditComposer(blog)}
-                              className="p-2 rounded-lg bg-slate-800 hover:bg-emerald-600 hover:text-white text-emerald-400 transition-colors border border-slate-700/80"
+                              className="p-2 rounded-lg bg-slate-50 hover:bg-[#ecfdf5] hover:text-[#059669] text-slate-600 transition-colors border border-slate-200"
                               title="Edit Article in Composer"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -661,7 +661,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                             <Link
                               href={`/blog/${blog.slug}`}
                               target="_blank"
-                              className="p-2 rounded-lg bg-slate-800 hover:bg-blue-600 hover:text-white text-blue-400 transition-colors border border-slate-700/80"
+                              className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-600 transition-colors border border-slate-200"
                               title="Preview Article on Public Blog"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
@@ -670,7 +670,7 @@ export default function BlogsManager({ onCountChange }: BlogsManagerProps) {
                             {/* Delete Button */}
                             <button
                               onClick={() => setDeleteConfirmId(blog.id)}
-                              className="p-2 rounded-lg bg-slate-800 hover:bg-rose-600 hover:text-white text-rose-400 transition-colors border border-slate-700/80"
+                              className="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-600 transition-colors border border-slate-200"
                               title="Delete Article"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
