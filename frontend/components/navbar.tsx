@@ -110,7 +110,6 @@ export default function Navbar() {
   const links = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
-    { name: 'Our Services', href: '/services' },
     { name: 'Franchise', href: '/franchise' },
     { name: 'Contact Us', href: '/contact' },
   ];
