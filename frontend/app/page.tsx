@@ -231,7 +231,7 @@ export default function HomePage() {
 
 
       {/* 5.5. Store Locator Section (Redesigned) */}
-      <ScrollReveal>
+      <ScrollReveal className="w-full">
         <StoreLocatorSection />
       </ScrollReveal>
 

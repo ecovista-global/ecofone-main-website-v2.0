@@ -66,7 +66,7 @@ export default function GallerySection({ initialData }: GallerySectionProps) {
   );
 
   return (
-    <section className="w-full bg-[#f4f7f5] py-16 sm:py-20 lg:py-24 overflow-x-hidden relative font-sans border-t border-slate-200/70 border-b border-slate-200/50">
+    <section className="w-full bg-[#f8fbf9] pt-2 sm:pt-4 pb-14 sm:pb-18 lg:pb-20 overflow-x-hidden relative font-sans border-b border-slate-200/50">
       
       {/* Header Block & Navigation Controls */}
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 mb-8 sm:mb-10 flex items-center justify-between gap-4">
