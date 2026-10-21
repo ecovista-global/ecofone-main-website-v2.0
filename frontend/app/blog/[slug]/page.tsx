@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { BLOG_POSTS, getBlogPostBySlug, getAllBlogSlugs } from '../../../data/blogs';
+import { BLOG_POSTS, getBlogPostBySlug, getAllBlogSlugs, getRelatedPosts } from '../../../data/blogs';
 import BlogDetailClient from './blog-detail-client';
 
 interface BlogDetailPageProps {
@@ -72,8 +72,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   }
 
   const relatedPosts = post.relatedSlugs
-    .map((rSlug) => getBlogPostBySlug(rSlug))
-    .filter((p): p is typeof post => Boolean(p));
+    ? post.relatedSlugs
+        .map((rSlug) => getBlogPostBySlug(rSlug))
+        .filter((p): p is typeof post => Boolean(p))
+    : getRelatedPosts(post.slug, 3);
 
   const siteUrl = 'https://www.ecofone.co.in';
   const postUrl = `${siteUrl}/blog/${post.slug}`;

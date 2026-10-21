@@ -4,24 +4,23 @@ import { BLOG_POSTS } from '../../data/blogs';
 import BlogListingClient from './blog-listing-client';
 
 export const metadata: Metadata = {
-  title: 'EcoFone Research & Articles | Refurbished Smartphone Market Trends',
-  description: 'Read complete research reports from Counterpoint, Business Standard, and Times of India rephrased and analyzed by EcoFone. Discover market data, buying guides, and circular economy trends.',
+  title: 'TechByte | EcoFone Smartphone News, Reviews & Refurbished Tech Guides',
+  description: 'Welcome to EcoFone TechByte: Latest mobile news, flagship comparisons, camera reviews, eSIM guides, and certified refurbished tech buying advice in India.',
   keywords: [
+    'EcoFone TechByte',
+    'smartphone news India',
+    'OnePlus 16 vs OnePlus 15',
+    'iPhone festival sale deals',
     'refurbished smartphone market India',
-    'Counterpoint research refurbished phones',
-    'why are new smartphones expensive India',
-    '1 in 5 smartphones refurbished',
-    'buy refurbished phones Lucknow',
-    'sell used phone online India',
-    'refurbished mobile franchise business',
-    'EcoFone research articles'
+    'how to transfer airtel esim',
+    'certified refurbished phones Lucknow'
   ],
   alternates: {
     canonical: 'https://www.ecofone.co.in/blog',
   },
   openGraph: {
-    title: 'EcoFone Research & Articles | Refurbished Smartphone Market Trends',
-    description: 'Explore in-depth analysis on why 1 in 5 smartphones in India is refurbished and how rising costs are driving demand for certified pre-owned tech.',
+    title: 'TechByte | EcoFone Smartphone News, Reviews & Refurbished Tech Guides',
+    description: 'Latest mobile news, flagship smartphone comparisons, camera reviews, and circular economy research by EcoFone.',
     url: 'https://www.ecofone.co.in/blog',
     siteName: 'EcoFone India',
     images: [

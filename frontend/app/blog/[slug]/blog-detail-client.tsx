@@ -3,22 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Share2, 
-  Check, 
-  ChevronDown, 
-  ExternalLink,
-  ShieldCheck,
-  Smartphone,
-  Store,
-  Sparkles,
-  ArrowRight,
-  TrendingUp,
-  Tag
-} from 'lucide-react';
-import { BlogPost } from '../../../data/blogs';
+  BlogPost, 
+  YOU_MAY_ALSO_READ, 
+  FIRST_IMPRESSIONS 
+} from '../../../data/blogs';
 
 interface BlogDetailClientProps {
   post: BlogPost;
@@ -40,7 +28,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
   const handleShareWhatsApp = () => {
     if (typeof window !== 'undefined') {
       const url = encodeURIComponent(window.location.href);
-      const text = encodeURIComponent(`Check out this insightful research on EcoFone: ${post.title}\n\n`);
+      const text = encodeURIComponent(`Read this on EcoFone TechByte: ${post.title}\n\n`);
       window.open(`https://api.whatsapp.com/send?text=${text}${url}`, '_blank');
     }
   };
@@ -70,9 +58,9 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
         return (
           <h2 
             key={idx} 
-            className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 mt-10 mb-4 pt-4 border-t border-slate-100 flex items-center gap-3 tracking-tight"
+            className="text-[20px] sm:text-[24px] font-bold text-[#071f12] mt-8 mb-3 pt-3 border-t border-slate-100 flex items-center gap-2.5 tracking-tight"
           >
-            <span className="w-2 h-6 bg-emerald-600 rounded-full inline-block flex-shrink-0" />
+            <span className="w-1.5 h-5 bg-gradient-to-b from-[#ea580c] to-[#16a34a] inline-block flex-shrink-0" />
             {section.replace('## ', '')}
           </h2>
         );
@@ -83,7 +71,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
         return (
           <h3 
             key={idx} 
-            className="text-lg sm:text-xl font-black text-slate-800 mt-6 mb-3 tracking-tight"
+            className="text-[17px] sm:text-[19px] font-bold text-[#071f12] mt-5 mb-2.5 tracking-tight"
           >
             {section.replace('### ', '')}
           </h3>
@@ -95,7 +83,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
         return (
           <blockquote 
             key={idx} 
-            className="my-6 p-5 sm:p-6 bg-emerald-50/60 border-l-4 border-emerald-600 rounded-r-2xl italic text-slate-700 text-sm sm:text-base leading-relaxed"
+            className="my-5 p-4 sm:p-5 bg-emerald-50/60 border-l-4 border-[#16a34a] rounded-r-xl italic text-slate-700 text-[13.5px] sm:text-[14px] leading-relaxed"
           >
             {section.replace(/^> \s*/gm, '')}
           </blockquote>
@@ -104,7 +92,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
 
       // Horizontal separator
       if (section === '---') {
-        return <hr key={idx} className="my-8 border-slate-200" />;
+        return <hr key={idx} className="my-6 border-slate-200" />;
       }
 
       // Tables (Markdown table detection)
@@ -115,9 +103,9 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
           const bodyRows = lines.slice(2).map(row => row.split('|').map(s => s.trim()).filter(Boolean));
 
           return (
-            <div key={idx} className="my-8 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm bg-white">
+            <div key={idx} className="my-6 overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
               <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-[#0e2a1f] text-white">
+                <thead className="bg-[#071f12] text-white">
                   <tr>
                     {headers.map((h, i) => (
                       <th key={i} className="py-3 px-4 font-bold border-b border-emerald-900/30">
@@ -148,26 +136,15 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
       }
 
       // Bullet List
-      if (section.startsWith('- ') || section.includes('\n- ')) {
-        const items = section.split('\n').filter(line => line.startsWith('- '));
+      if (section.startsWith('- ') || section.startsWith('* ')) {
+        const items = section.split('\n').filter(line => line.startsWith('- ') || line.startsWith('* '));
         return (
-          <ul key={idx} className="space-y-2.5 my-4">
-            {items.map((item, itemIdx) => {
-              const cleanItem = item.replace(/^- /, '');
-              const parts = cleanItem.split(':');
+          <ul key={idx} className="my-4 space-y-2 text-[14px] text-slate-700 pl-4 list-disc marker:text-[#16a34a]">
+            {items.map((item, iIdx) => {
+              const cleanItem = item.replace(/^[-*]\s+/, '');
               return (
-                <li key={itemIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-2 flex-shrink-0" />
-                  <span>
-                    {parts.length > 1 ? (
-                      <>
-                        <strong className="text-slate-900 font-bold">{parts[0].replace(/\*\*/g, '')}:</strong>
-                        {parts.slice(1).join(':')}
-                      </>
-                    ) : (
-                      cleanItem.replace(/\*\*/g, '')
-                    )}
-                  </span>
+                <li key={iIdx} className="leading-relaxed">
+                  {cleanItem}
                 </li>
               );
             })}
@@ -179,25 +156,12 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
       if (/^\d+\.\s/.test(section)) {
         const items = section.split('\n').filter(line => /^\d+\.\s/.test(line));
         return (
-          <ol key={idx} className="space-y-3 my-4">
-            {items.map((item, itemIdx) => {
-              const cleanItem = item.replace(/^\d+\.\s/, '');
-              const parts = cleanItem.split(':');
+          <ol key={idx} className="my-4 space-y-2 text-[14px] text-slate-700 pl-4 list-decimal marker:font-bold marker:text-[#16a34a]">
+            {items.map((item, iIdx) => {
+              const cleanItem = item.replace(/^\d+\.\s+/, '');
               return (
-                <li key={itemIdx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {itemIdx + 1}
-                  </span>
-                  <div>
-                    {parts.length > 1 ? (
-                      <>
-                        <strong className="text-slate-900 font-bold">{parts[0].replace(/\*\*/g, '')}: </strong>
-                        <span>{parts.slice(1).join(':')}</span>
-                      </>
-                    ) : (
-                      <span>{cleanItem.replace(/\*\*/g, '')}</span>
-                    )}
-                  </div>
+                <li key={iIdx} className="leading-relaxed">
+                  {cleanItem}
                 </li>
               );
             })}
@@ -210,14 +174,14 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
         const parts = text.split(/(\*\*.*?\*\*)/g);
         return parts.map((part, pIdx) => {
           if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={pIdx} className="text-slate-900 font-bold">{part.slice(2, -2)}</strong>;
+            return <strong key={pIdx} className="text-[#111827] font-bold">{part.slice(2, -2)}</strong>;
           }
           return part;
         });
       };
 
       return (
-        <p key={idx} className="text-xs sm:text-sm md:text-[15px] text-slate-600 leading-[1.75] mb-4">
+        <p key={idx} className="text-[14.5px] sm:text-[15px] text-[#374151] leading-[1.8] mb-4">
           {renderFormattedText(section)}
         </p>
       );
@@ -225,370 +189,324 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
   };
 
   return (
-    <div className="w-full bg-[#f8fbf9] min-h-screen font-sans pb-20">
-      
-      {/* Top Breadcrumb & Navigation Strip */}
-      <div className="bg-white border-b border-slate-200/80 sticky top-16 sm:top-20 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
-            <Link href="/" className="hover:text-emerald-700 transition-colors">Home</Link>
-            <span>/</span>
-            <Link href="/blog" className="hover:text-emerald-700 transition-colors">Articles & Research</Link>
-            <span>/</span>
-            <span className="text-slate-900 font-semibold truncate max-w-[200px] sm:max-w-md">{post.title}</span>
-          </div>
+    <div className="w-full bg-[#f8faf9] min-h-screen font-sans text-slate-900 pb-20">
 
-          <Link 
-            href="/blog" 
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Articles
-          </Link>
-        </div>
-      </div>
-
-      {/* Article Header Hero */}
-      <header className="bg-[#061c0f] text-white pt-12 pb-14 sm:pb-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-900/30 via-transparent to-transparent pointer-events-none" />
+      {/* Main Content Area */}
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6 sm:pt-8 space-y-6">
         
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              {post.category}
-            </span>
-            <span className="bg-white/10 text-slate-300 text-[11px] font-medium px-3 py-1 rounded-full">
-              Source: {post.publisher}
-            </span>
-            <a 
-              href={post.sourceUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 ml-auto"
-            >
-              Original Source <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
-          <h1 className="text-2xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.2] text-white">
+        {/* Breadcrumb Trail */}
+        <nav className="text-[13px] text-[#6b7280] font-medium flex items-center gap-1.5 flex-wrap">
+          <Link href="/" className="hover:text-[#ea580c] transition-colors">
+            Home
+          </Link>
+          <span className="text-slate-400 font-normal">&gt;</span>
+          <Link href="/blog" className="hover:text-[#ea580c] transition-colors">
+            TechByte
+          </Link>
+          <span className="text-slate-400 font-normal">&gt;</span>
+          <span className="text-[#ea580c] font-medium">{post.category}</span>
+          <span className="text-slate-400 font-normal">&gt;</span>
+          <span className="text-[#071f12] font-semibold truncate max-w-[280px] sm:max-w-md">
             {post.title}
-          </h1>
+          </span>
+        </nav>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            {post.excerpt}
-          </p>
+        {/* 2-Column Split: Article Body (68%) + Sticky Sidebar (32%) */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* ================= LEFT COLUMN: Article Content ================= */}
+          <main className="w-full lg:w-[68%] bg-white rounded-xl border border-[#eaeaea] shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-5 sm:p-8 space-y-6">
+            
+            {/* Article Header Metadata */}
+            <div className="space-y-3.5 border-b border-slate-100 pb-5">
+              <span className="inline-block bg-[#071f12] text-[#22c55e] border border-emerald-900/40 text-[11.5px] font-bold px-2.5 py-0.5 uppercase tracking-wider">
+                {post.category}
+              </span>
 
-          <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-300">
-            <div className="flex items-center gap-3">
-              <img src={post.author.avatar} alt="Author" className="w-10 h-10 rounded-full border border-white/20 object-cover" />
-              <div>
-                <div className="font-bold text-white text-sm">{post.author.name}</div>
-                <div className="text-[11px] text-slate-400">{post.author.role}</div>
+              <h1 className="text-[22px] sm:text-[28px] md:text-[32px] font-bold text-[#071f12] leading-tight">
+                {post.title}
+              </h1>
+
+              {/* Byline */}
+              <div className="flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-[#6b7280] pt-1">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={post.author.avatar || '/logo.jpg'}
+                    alt={post.author.name}
+                    className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                  />
+                  <span className="font-medium text-slate-800">By {post.author.name}</span>
+                  <span>•</span>
+                  <span>{post.date}</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span>{post.readingTime}</span>
+                  {post.sourceUrl && (
+                    <a
+                      href={post.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#ea580c] hover:underline"
+                    >
+                      Source: {post.publisher} ↗
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs">
-              <span className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                {post.date}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                {post.readingTime}
-              </span>
+            {/* Featured Article Image */}
+            <div className="aspect-[16/9] w-full rounded-none overflow-hidden bg-slate-100 relative">
+              <img
+                src={post.imageUrl}
+                alt={post.imageAlt || post.title}
+                className="w-full h-full object-cover rounded-none"
+              />
             </div>
-          </div>
-        </div>
-      </header>
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        
-        {/* Featured Image Banner */}
-        <div className="max-w-4xl mx-auto mb-10">
-          <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-slate-900 max-h-[460px]">
-            <img
-              src={post.imageUrl}
-              alt={post.imageAlt}
-              className="w-full h-full object-cover object-center max-h-[460px]"
-            />
-            <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white text-xs">
-              <p className="font-medium text-slate-200">
-                {post.imageAlt} • Verified by EcoFone Recommerce Intelligence
-              </p>
-            </div>
-          </div>
-        </div>
+            {/* Key Statistics / Highlights (If Present) */}
+            {post.keyStats && post.keyStats.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 border border-slate-100 rounded-lg">
+                {post.keyStats.map((stat, i) => (
+                  <div key={i} className="text-center sm:text-left">
+                    <div className="text-[18px] sm:text-[20px] font-bold text-[#111827]">
+                      {stat.value}
+                    </div>
+                    <div className="text-[11.5px] text-[#6b7280] font-medium leading-tight mt-0.5">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {/* Key Highlights Strip */}
-        <div className="max-w-4xl mx-auto mb-12">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600" /> Key Research Findings at a Glance
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {post.keyStats.map((stat, i) => (
-                <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <div className="text-xl sm:text-2xl font-black text-[#0e2a1f] mb-1">{stat.value}</div>
-                  <div className="text-xs text-slate-500 leading-tight">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+            {/* Lead Excerpt */}
+            <p className="text-[15px] sm:text-[16px] text-slate-800 font-semibold leading-relaxed border-l-4 border-[#ea580c] pl-3.5 my-4">
+              {post.excerpt}
+            </p>
 
-        {/* Content Layout: Main Text + Sticky Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 max-w-7xl mx-auto">
-          
-          {/* Main Article Body (8 Cols) */}
-          <main className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-6">
-            
-            {/* Formatted Content */}
-            <article className="prose-slate max-w-none">
+            {/* Article Body */}
+            <article className="prose-slate max-w-none pt-2">
               {renderFormattedContent(post.content)}
             </article>
 
-            {/* Keyword Tags */}
-            <div className="pt-8 border-t border-slate-100">
-              <div className="flex items-center gap-2 mb-3">
-                <Tag className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Related Topics</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {post.keywords.map((kw, i) => (
-                  <span key={i} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1 rounded-full font-medium transition-colors">
-                    #{kw}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* FAQ Accordion Section */}
-            {post.faqs && post.faqs.length > 0 && (
-              <section className="pt-10 border-t border-slate-100 space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    Frequently Asked Questions (FAQ)
-                  </h3>
-                </div>
-
-                <div className="space-y-3">
-                  {post.faqs.map((faq, i) => {
-                    const isOpen = openFaqIndex === i;
-                    return (
-                      <div 
-                        key={i} 
-                        className="border border-slate-200 rounded-2xl overflow-hidden transition-all"
-                      >
-                        <button
-                          onClick={() => setOpenFaqIndex(isOpen ? null : i)}
-                          className="w-full text-left p-4 sm:p-5 flex items-center justify-between gap-4 bg-slate-50 hover:bg-slate-100/70 transition-colors"
-                        >
-                          <span className="font-bold text-xs sm:text-sm text-slate-900">
-                            {faq.question}
-                          </span>
-                          <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        
-                        {isOpen && (
-                          <div className="p-4 sm:p-5 bg-white text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100">
-                            {faq.answer}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* In-Article Conversion Banner */}
-            <div className="bg-gradient-to-br from-[#061c0f] to-[#0e2a1f] rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden my-8">
-              <div className="relative z-10 space-y-4">
-                <span className="bg-emerald-500/20 text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-full uppercase">
-                  EcoFone Advantage
-                </span>
-                <h4 className="text-lg sm:text-xl font-black text-white">
-                  Looking to Upgrade Your Smartphone for Less?
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-                  Shop certified refurbished iPhones, Samsung Galaxy, and OnePlus devices with 40+ diagnostic tests, 6-month warranty, and free doorstep delivery across India.
-                </p>
-                <div className="pt-2 flex flex-wrap gap-3">
-                  <Link
-                    href="/buy"
-                    className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-full transition-all shadow-sm inline-flex items-center gap-1.5"
-                  >
-                    View Available Phones <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                  <Link
-                    href="/sell"
-                    className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-5 py-2.5 rounded-full transition-all border border-white/20 inline-flex items-center gap-1.5"
-                  >
-                    Sell Old Phone for Cash
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-          </main>
-
-          {/* Sticky Sidebar (4 Cols) */}
-          <aside className="lg:col-span-4 space-y-6">
-            
-            {/* Social Share Box */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-              <h5 className="font-bold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-emerald-600" /> Share This Research
-              </h5>
-
-              <div className="grid grid-cols-2 gap-2">
+            {/* Social Share Strip */}
+            <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[13px] font-bold text-[#111827]">
+                Share this article:
+              </span>
+              <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleShareWhatsApp}
-                  className="bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] font-bold text-xs py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="bg-[#25D366] hover:opacity-90 text-white text-[12px] font-bold px-3 py-1.5 rounded-md transition-opacity"
                 >
                   WhatsApp
                 </button>
                 <button
+                  type="button"
                   onClick={handleShareTwitter}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="bg-[#1d9bf0] hover:opacity-90 text-white text-[12px] font-bold px-3 py-1.5 rounded-md transition-opacity"
                 >
-                  Twitter / X
+                  X (Twitter)
                 </button>
                 <button
+                  type="button"
                   onClick={handleShareLinkedIn}
-                  className="bg-[#0077B5]/10 hover:bg-[#0077B5]/20 text-[#0077B5] font-bold text-xs py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="bg-[#0a66c2] hover:opacity-90 text-white text-[12px] font-bold px-3 py-1.5 rounded-md transition-opacity"
                 >
                   LinkedIn
                 </button>
                 <button
+                  type="button"
                   onClick={handleCopyLink}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold px-3 py-1.5 rounded-md transition-colors"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : null}
-                  {copied ? 'Copied!' : 'Copy Link'}
+                  {copied ? 'Copied ✓' : 'Copy Link'}
                 </button>
               </div>
             </div>
 
-            {/* Quick Action 1: Buy Refurbished */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                <Smartphone className="w-5 h-5" />
+            {/* Related Research Articles */}
+            {relatedPosts.length > 0 && (
+              <div className="pt-8 border-t border-slate-100 space-y-4">
+                <h3 className="text-[18px] font-bold text-[#071f12]">
+                  Related TechByte Articles
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {relatedPosts.map((rel) => (
+                    <Link
+                      key={rel.id}
+                      href={`/blog/${rel.slug}`}
+                      className="group/card block bg-white rounded-lg p-2.5 border border-[#e5e7eb] shadow-sm hover:border-slate-300 transition-all"
+                    >
+                      <div className="aspect-[16/9] w-full rounded-none overflow-hidden bg-slate-100 relative">
+                        <img
+                          src={rel.imageUrl}
+                          alt={rel.title}
+                          className="w-full h-full object-cover rounded-none group-hover/card:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <h4 className="text-[13.5px] font-bold text-[#071f12] line-clamp-2 mt-2 leading-snug group-hover/card:text-[#ea580c] transition-colors">
+                        {rel.title}
+                      </h4>
+                      <span className="text-[11.5px] text-[#6b7280] font-medium block mt-1">
+                        {rel.date}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <h5 className="text-base font-black text-slate-900">
-                Buy Certified Refurbished Phones
-              </h5>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Save up to 70% compared to new retail pricing. Tested across 40+ hardware points with 6-month warranty.
-              </p>
-              <Link
-                href="/buy"
-                className="w-full bg-[#0e2a1f] hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all inline-flex items-center justify-center gap-2"
-              >
-                Explore Inventory <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+            )}
+
+          </main>
+
+          {/* ================= RIGHT COLUMN: Sticky Sidebar ================= */}
+          <aside className="w-full lg:w-[32%] space-y-6 lg:sticky lg:top-28">
+
+            {/* Widget 2: Follow Social Bar */}
+            <div className="space-y-2.5">
+              <h2 className="text-[18px] font-bold text-[#071f12] flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-[#ea580c] inline-block" />
+                Follow
+              </h2>
+              
+              <div className="flex items-center gap-2.5">
+                <a
+                  href="https://x.com/ecofonel82115"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow EcoFone on X"
+                  className="w-10 h-10 rounded-full bg-[#1d9bf0] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </a>
+
+                <a
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow EcoFone on YouTube"
+                  className="w-10 h-10 rounded-full bg-[#ff0000] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                </a>
+
+                <a
+                  href="https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow EcoFone on Facebook"
+                  className="w-10 h-10 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                </a>
+
+                <a
+                  href="https://www.instagram.com/ecofone_official"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow EcoFone on Instagram"
+                  className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                </a>
+
+                <a
+                  href="https://www.linkedin.com/company/ecovista-private-limited/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Follow EcoFone on LinkedIn"
+                  className="w-10 h-10 rounded-full bg-[#0a66c2] text-white flex items-center justify-center hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                  </svg>
+                </a>
+              </div>
             </div>
 
-            {/* Quick Action 2: Franchise Opportunity */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50/50 rounded-3xl border border-orange-200/60 p-6 shadow-sm space-y-4">
-              <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center font-bold">
-                <Store className="w-5 h-5" />
+            {/* Widget 3: You May Also Read */}
+            <div className="space-y-2.5">
+              <h2 className="text-[18px] font-bold text-[#071f12] flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-[#ea580c] inline-block" />
+                You May Also Read
+              </h2>
+
+              <div className="bg-white rounded-xl p-4 border border-[#eaeaea] shadow-[0_2px_10px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+                {YOU_MAY_ALSO_READ.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/blog/${item.slug}`}
+                    className="group flex items-start gap-3"
+                  >
+                    <div className="w-[88px] h-[56px] rounded-none overflow-hidden bg-slate-100 shrink-0 relative">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover rounded-none group-hover:scale-105 transition-transform duration-200"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[13.5px] font-bold text-[#071f12] line-clamp-2 leading-snug group-hover:text-[#ea580c] transition-colors">
+                        {item.title}
+                      </h4>
+                      <span className="text-[11.5px] text-[#16a34a] font-medium block mt-1">
+                        {item.date}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <h5 className="text-base font-black text-slate-900">
-                Open an EcoFone Franchise
-              </h5>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Tap into India's fastest growing ₹25,000 Cr recommerce industry. High margins of 12% - 20% with complete inventory and marketing backing.
-              </p>
-              <Link
-                href="/franchise"
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-sm"
-              >
-                Apply for Franchise <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
 
-            {/* EcoFone Trust Points */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-3">
-              <h6 className="text-xs font-black uppercase tracking-wider text-slate-400">
-                The EcoFone Promise
-              </h6>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <span>40+ Point Diagnostic Testing</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <span>6-Month Repair & Replacement Warranty</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <span>100% Legal Police Database Checked</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <span>Walk-in Physical Store Service</span>
-                </div>
+            {/* Widget 4: First Impressions */}
+            <div className="space-y-2.5">
+              <h2 className="text-[18px] font-bold text-[#071f12] flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-[#ea580c] inline-block" />
+                First Impressions
+              </h2>
+
+              <div className="bg-white rounded-xl p-4 border border-[#eaeaea] shadow-[0_2px_10px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+                {FIRST_IMPRESSIONS.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/blog/${item.slug}`}
+                    className="group flex items-start gap-3"
+                  >
+                    <div className="w-[88px] h-[56px] rounded-none overflow-hidden bg-slate-100 shrink-0 relative">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover rounded-none group-hover:scale-105 transition-transform duration-200"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[13.5px] font-bold text-[#071f12] line-clamp-2 leading-snug group-hover:text-[#ea580c] transition-colors">
+                        {item.title}
+                      </h4>
+                      <span className="text-[11.5px] text-[#16a34a] font-medium block mt-1">
+                        {item.date}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
 
           </aside>
 
         </div>
-
-        {/* Related Articles Section */}
-        {relatedPosts.length > 0 && (
-          <section className="pt-16 mt-16 border-t border-slate-200/80 space-y-8">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full inline-block mb-2">
-                Continue Reading
-              </span>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Related Market Intelligence & Research
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {relatedPosts.map((rPost) => (
-                <div
-                  key={rPost.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group h-full"
-                >
-                  <Link href={`/blog/${rPost.slug}`} className="h-40 w-full bg-slate-100 overflow-hidden relative block">
-                    <img
-                      src={rPost.imageUrl}
-                      alt={rPost.imageAlt}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <span className="absolute top-3 left-3 bg-white/95 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                      {rPost.publisher}
-                    </span>
-                  </Link>
-
-                  <div className="p-5 flex flex-col flex-grow justify-between space-y-3">
-                    <div>
-                      <div className="text-[10px] text-slate-400 mb-1">{rPost.date} • {rPost.readingTime}</div>
-                      <h4 className="text-sm font-black text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2">
-                        <Link href={`/blog/${rPost.slug}`}>
-                          {rPost.title}
-                        </Link>
-                      </h4>
-                    </div>
-
-                    <Link
-                      href={`/blog/${rPost.slug}`}
-                      className="text-xs font-bold text-emerald-700 inline-flex items-center gap-1 group-hover:gap-2 transition-all mt-auto"
-                    >
-                      Read Article <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
       </div>
 

@@ -58,7 +58,10 @@ export default function RootLayout({
                   "url": "https://www.ecofone.co.in",
                   "logo": "https://www.ecofone.co.in/logo.jpg",
                   "sameAs": [
-                    "https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr"
+                    "https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr",
+                    "https://www.instagram.com/ecofone_official",
+                    "https://www.linkedin.com/company/ecovista-private-limited/",
+                    "https://x.com/ecofonel82115"
                   ],
                   "contactPoint": {
                     "@type": "ContactPoint",
@@ -125,113 +128,104 @@ export default function RootLayout({
       <body className="bg-dots min-h-screen flex flex-col font-sans relative">
         <LayoutClientWrapper
           footer={
-                        <footer className="w-full bg-[#f8f9fa] border-t border-gray-200 text-slate-600 text-[12px] font-sans pb-6">
-              {/* TOP SECTION: Links & Logo */}
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr] gap-6 lg:gap-8">
-                  
-                  {/* Col 1: Logo & Socials */}
-                  <div className="col-span-2 md:col-span-1 flex flex-col space-y-6">
+            <footer className="w-full bg-[#071f12] text-slate-300 font-sans border-t border-[#0d3820] pt-14 pb-8">
+              <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 pb-12 border-b border-[#0f3d23]">
+                  {/* Col 1: Brand & Review */}
+                  <div className="flex flex-col space-y-4">
                     <Link href="/" className="inline-block">
-                      <img src="/logo.jpg" alt="EcoFone Logo" className="h-10 sm:h-12 w-auto object-contain object-left" />
+                      <img src="/logo.jpg" alt="EcoFone Logo" className="h-12 w-auto object-contain rounded" />
                     </Link>
-                    <div className="flex flex-col gap-2.5">
-                      <span className="font-bold text-[13px] text-slate-700">Follow us on</span>
-                      <div className="flex items-center gap-2">
-                        {/* Social Icons matching Cashify's grey circular style */}
-                        <a href="https://x.com/ecofonel82115" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 transition-colors">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                        </a>
-                        <a href="https://www.facebook.com/people/EcoFone/61583296272681" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 transition-colors">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" /></svg>
-                        </a>
-                        <a href="https://www.instagram.com/ecofone_official" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 transition-colors">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
-                        </a>
-                        <a href="#" className="w-8 h-8 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-600 transition-colors">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-                        </a>
-                      </div>
+                    <p className="text-[13px] text-slate-300 leading-relaxed">
+                      EcoFone is India’s premium franchise network and trade-in platform for high-quality refurbished smartphones. Extending the lifecycle of electronics for a greener tomorrow.
+                    </p>
+                    <div className="pt-2">
+                      <WriteReviewButton />
                     </div>
                   </div>
 
-                                    {/* Col 2: Services */}
-                  <div className="flex flex-col gap-4">
-                    <h4 className="font-bold text-[13px] text-slate-700">Services</h4>
-                    <ul className="flex flex-col gap-3">
-                      <li><Link href="/buy" className="hover:text-[#38b2ac] transition-colors">Buy Refurbished Phones</Link></li>
-                      <li><Link href="/sell" className="hover:text-[#38b2ac] transition-colors">Sell Old Phone</Link></li>
-                      <li><Link href="/franchise" className="hover:text-[#38b2ac] transition-colors">Franchise Program</Link></li>
-                      <li><Link href="/contact" className="hover:text-[#38b2ac] transition-colors">Mobile Repair</Link></li>
-                      <li><Link href="/contact" className="hover:text-[#38b2ac] transition-colors">Corporate Sales</Link></li>
+                  {/* Col 2: Quick Links */}
+                  <div className="flex flex-col space-y-3">
+                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
+                      QUICK LINKS
+                    </h4>
+                    <ul className="flex flex-col space-y-2 text-[13px] text-slate-300">
+                      <li><Link href="/" className="hover:text-emerald-400 transition-colors">Home</Link></li>
+                      <li><Link href="/about" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
+                      <li><Link href="/services" className="hover:text-emerald-400 transition-colors">Our Services</Link></li>
+                      <li><Link href="/franchise" className="hover:text-emerald-400 transition-colors">Franchise Program</Link></li>
+                      <li><Link href="/blog" className="hover:text-emerald-400 transition-colors">Articles / Blogs</Link></li>
+                      <li><Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link></li>
+                      <li className="pt-1">
+                        <Link href="/verify-certificate/EF-2026-8842" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                          <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                          <span>Verify Certificate</span>
+                        </Link>
+                      </li>
                     </ul>
                   </div>
 
-                                    {/* Col 3: Company */}
-                  <div className="flex flex-col gap-4">
-                    <h4 className="font-bold text-[13px] text-slate-700">Company</h4>
-                    <ul className="flex flex-col gap-3">
-                      <li><Link href="/about" className="hover:text-[#ea580c] transition-colors">About Us</Link></li>
-                      <li><Link href="/careers" className="hover:text-[#ea580c] transition-colors">Careers</Link></li>
-                      <li><Link href="/blog" className="hover:text-[#ea580c] transition-colors">Articles</Link></li>
-                      <li><Link href="/franchise" className="hover:text-[#ea580c] transition-colors">Partner With Us</Link></li>
-                    </ul>
+                  {/* Col 3: Contact Us */}
+                  <div className="flex flex-col space-y-3">
+                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
+                      CONTACT US
+                    </h4>
+                    <div className="flex flex-col space-y-2.5 text-[13px] text-slate-300">
+                      <p><span className="text-slate-400">Email:</span> <a href="mailto:business@ecofone.co.in" className="hover:text-emerald-400 transition-colors">business@ecofone.co.in</a></p>
+                      <p><span className="text-slate-400">Phone:</span> <a href="tel:+919919965499" className="hover:text-emerald-400 transition-colors">+91 99199 65499</a></p>
+                      <p className="leading-relaxed">
+                        <span className="text-slate-400">Lucknow HQ:</span> 505, JB Metro Heights, Transport Nagar, Kanpur Road, Lucknow – 226012
+                      </p>
+                    </div>
                   </div>
 
-
-
-                  {/* Col 5: Help & Support */}
-                  <div className="flex flex-col gap-4">
-                    <h4 className="font-bold text-[13px] text-slate-700">Help & Support</h4>
-                    <ul className="flex flex-col gap-3">
-                      <li><Link href="/faq" className="hover:text-[#38b2ac] transition-colors">FAQ</Link></li>
-                      <li><Link href="/contact" className="hover:text-[#38b2ac] transition-colors">Contact Us</Link></li>
-                      <li><Link href="/warranty-policy" className="hover:text-[#38b2ac] transition-colors">Warranty Policy</Link></li>
-                      <li><Link href="/refund-policy" className="hover:text-[#38b2ac] transition-colors">Refund Policy</Link></li>
-                    </ul>
-                  </div>
-
-                                    {/* Col 6: More Info & Chat */}
-                  <div className="flex flex-col gap-4 relative">
-                    <h4 className="font-bold text-[13px] text-slate-700">More Info</h4>
-                    <ul className="flex flex-col gap-3">
-                      <li><Link href="/terms-and-conditions" className="hover:text-[#38b2ac] transition-colors">Terms & Conditions</Link></li>
-                      <li><Link href="/privacy-policy" className="hover:text-[#38b2ac] transition-colors">Privacy Policy</Link></li>
-                      <li><Link href="/terms-of-use" className="hover:text-[#38b2ac] transition-colors">Terms of Use</Link></li>
-                      <li><Link href="/e-waste-policy" className="hover:text-[#38b2ac] transition-colors">E-Waste Policy</Link></li>
-                      <li><Link href="/cookie-policy" className="hover:text-[#38b2ac] transition-colors">Cookie Policy</Link></li>
-                    </ul>
+                  {/* Col 4: Our Location */}
+                  <div className="flex flex-col space-y-3">
+                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
+                      OUR LOCATION
+                    </h4>
+                    <div className="relative rounded-xl overflow-hidden border border-[#0f3d23] shadow-lg bg-[#05160d] group h-36">
+                      <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3561.2274483733226!2d80.8920155!3d26.7993086!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399bf88414995555%3A0xb35a9f24300bbba1!2sJB%20Metro%20Heights!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 0 }} 
+                        allowFullScreen={false} 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer-when-downgrade"
+                        className="w-full h-full grayscale-[25%] contrast-110"
+                      />
+                      <a
+                        href="https://maps.google.com/?q=JB+Metro+Heights+Transport+Nagar+Lucknow"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute top-2.5 left-2.5 bg-white/90 hover:bg-white text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-md flex items-center gap-1 transition-all"
+                      >
+                        <span>Maps</span>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* MIDDLE SECTION: Registered Office & Guarantee Box */}
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-                <hr className="border-gray-200" />
-                <div className="pt-6 pb-2 flex flex-col lg:flex-row justify-between items-start gap-8">
-                  
-                  {/* Left: Office Address Text */}
-                  <div className="flex flex-col gap-3 text-[11px] text-slate-500 leading-relaxed max-w-3xl pr-4">
-                    <p>Registered Office:</p>
-                    <p>
-                      EcoFone Limited (formerly known as EcoFone Pvt. Ltd. and Manak Waste Management Pvt. Ltd.) | 505, JB Metro Heights, Transport Nagar, Kanpur Road, Lucknow, Uttar Pradesh 226012, India, Support-9919965499 | CIN: U46524DL2009PLC190441<br/>
-                      EcoFone Limited (formerly known as EcoFone Pvt. Ltd. and Manak Waste Management Pvt. Ltd.) is ISO 27001 & 27701 Compliance Certified. Person who may be contacted in case of any compliance related queries or grievances: Manoj Kumar (grievanceofficer@ecofone.co.in)<br/>
-                      EcoFone Limited (formerly known as EcoFone Pvt. Ltd. and Manak Waste Management Pvt. Ltd.) is R2v3 Certified. Current certification scope covers Downstream Vendor Management, Logical Data Sanitization, and Testing & Repair of Used Laptops only.
-                    </p>
-                    <p className="mt-1">
-                      Country of Origin : India ** All product , logos, and brands are property of their respective owners. All company, product and service names used in this website are for identification purposes only. Use of these names, logos, and brands does not imply endorsement.
-                    </p>
+                {/* Bottom Bar */}
+                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-slate-400">
+                  <p>© 2026 EcoFone Franchise Network. All rights reserved.</p>
+                  <div className="flex items-center gap-4 text-slate-400">
+                    <a href="https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="Facebook">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" /></svg>
+                    </a>
+                    <a href="https://www.instagram.com/ecofone_official" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="Instagram">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                    </a>
+                    <a href="https://www.linkedin.com/company/ecovista-private-limited/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="LinkedIn">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://x.com/ecofonel82115" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="X">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    </a>
                   </div>
-
-
-
                 </div>
-              </div>
-
-              {/* BOTTOM SECTION: Copyright */}
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <hr className="border-gray-200 mb-6" />
-                <span className="text-[12px] text-slate-600">Copyright © <CopyrightYear /> EcoFone All rights reserved</span>
               </div>
             </footer>
           }

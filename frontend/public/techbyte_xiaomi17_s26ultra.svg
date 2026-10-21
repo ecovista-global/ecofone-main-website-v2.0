@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="phoneL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#c2410c" />
+    </linearGradient>
+    <linearGradient id="phoneR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="50%" stop-color="#64748b" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#bg)" />
+
+  <!-- Subtle Studio Accents -->
+  <circle cx="620" cy="225" r="210" fill="#ffffff" opacity="0.04" filter="blur(40px)" />
+  <circle cx="150" cy="100" r="150" fill="#ffffff" opacity="0.02" />
+  <path d="M 0 380 Q 400 340 800 400 L 800 450 L 0 450 Z" fill="#000000" opacity="0.2" />
+
+  <!-- Left Editorial Typography Block -->
+  <g transform="translate(48, 120)">
+    <!-- Title Line 1 -->
+    <text x="0" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-0.5">
+      Xiaomi 17 Ultra vs
+    </text>
+    <!-- Title Line 2 -->
+    <text x="0" y="102" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-0.5">
+      Galaxy S26 Ultra
+    </text>
+    <!-- Italic Subtitle -->
+    <text x="0" y="152" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-style="italic" font-weight="500" fill="#cbd5e1">
+      Ultimate 2026 Camera Flagship Showdown
+    </text>
+  </g>
+
+  <!-- Watermark on Bottom-Left -->
+  <g transform="translate(48, 410)">
+    <circle cx="10" cy="-6" r="8" fill="#10b981" />
+    <text x="26" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="800" fill="#ffffff" opacity="0.5" letter-spacing="1">
+      ECOFONE TECHBYTE
+    </text>
+  </g>
+
+  <!-- Right Side Device Showcase -->
+  <g transform="translate(430, 45)">
+    <!-- Left Phone Device -->
+    <g transform="translate(20, 30)" filter="url(#shadow)">
+      <!-- Body -->
+      <rect x="0" y="0" width="135" height="270" rx="22" fill="#0f172a" stroke="url(#metal)" stroke-width="3" />
+      <rect x="5" y="5" width="125" height="260" rx="18" fill="url(#phoneL)" />
+      <!-- Camera Island -->
+      <rect x="14" y="14" width="46" height="52" rx="12" fill="#090d16" opacity="0.9" />
+      <circle cx="28" cy="28" r="8" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <circle cx="28" cy="50" r="8" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <circle cx="48" cy="38" r="6" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <!-- Screen Notch / Speaker -->
+      <rect x="52" y="10" width="30" height="4" rx="2" fill="#334155" />
+      <!-- Badge on Screen -->
+      <rect x="18" y="210" width="100" height="26" rx="6" fill="#000000" opacity="0.6" />
+      <text x="68" y="227" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">
+        Xiaomi 17U
+      </text>
+    </g>
+
+    <!-- Center V/S Badge -->
+    <g transform="translate(142, 175)" filter="url(#shadow)">
+      <circle cx="22" cy="22" r="22" fill="#071f12" stroke="#16a34a" stroke-width="2.5" />
+      <text x="22" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">
+        V/S
+      </text>
+    </g>
+
+    <!-- Right Phone Device -->
+    <g transform="translate(180, 55)" filter="url(#shadow)">
+      <!-- Body -->
+      <rect x="0" y="0" width="135" height="270" rx="22" fill="#0f172a" stroke="url(#metal)" stroke-width="3" />
+      <rect x="5" y="5" width="125" height="260" rx="18" fill="url(#phoneR)" />
+      <!-- Camera Island -->
+      <rect x="14" y="14" width="46" height="52" rx="12" fill="#090d16" opacity="0.9" />
+      <circle cx="28" cy="28" r="8" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <circle cx="28" cy="50" r="8" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <circle cx="48" cy="38" r="6" fill="#1e293b" stroke="#475569" stroke-width="1.5" />
+      <!-- Screen Notch / Speaker -->
+      <rect x="52" y="10" width="30" height="4" rx="2" fill="#334155" />
+      <!-- Badge on Screen -->
+      <rect x="18" y="210" width="100" height="26" rx="6" fill="#000000" opacity="0.6" />
+      <text x="68" y="227" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">
+        S26 Ultra
+      </text>
+    </g>
+  </g>
+</svg>

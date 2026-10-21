@@ -80,8 +80,10 @@ const GOOGLE_JOBS_STRUCTURED_DATA = {
       url: 'https://www.ecofone.co.in',
       logo: 'https://www.ecofone.co.in/logo.jpg',
       sameAs: [
-        'https://www.instagram.com/ecofone.in',
-        'https://www.linkedin.com/company/ecofone',
+        'https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr',
+        'https://www.instagram.com/ecofone_official',
+        'https://www.linkedin.com/company/ecovista-private-limited/',
+        'https://x.com/ecofonel82115',
       ],
     },
     {

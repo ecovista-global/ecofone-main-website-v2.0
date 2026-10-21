@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95" />
+      <stop offset="100%" stop-color="#6b21a8" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg)" />
+
+  <!-- Studio Glow -->
+  <circle cx="600" cy="225" r="220" fill="#ffffff" opacity="0.08" filter="blur(50px)" />
+
+  <!-- Typography -->
+  <g transform="translate(48, 120)">
+    <rect x="0" y="0" width="170" height="30" rx="15" fill="#ea580c" />
+    <text x="85" y="20" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">
+      FLAGSHIP KILLER
+    </text>
+
+    <text x="0" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="40" font-weight="900" fill="#ffffff" letter-spacing="-0.5">
+      iQOO Neo 12
+    </text>
+    <text x="0" y="118" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="40" font-weight="900" fill="#ffffff" letter-spacing="-0.5">
+      Launch Date & Specs
+    </text>
+    <text x="0" y="165" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="500" fill="#e2e8f0">
+      Key Specs and Expected India Price
+    </text>
+  </g>
+
+  <!-- Watermark on Bottom-Left -->
+  <g transform="translate(48, 410)">
+    <circle cx="10" cy="-6" r="8" fill="#10b981" />
+    <text x="26" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="800" fill="#ffffff" opacity="0.6" letter-spacing="1">
+      ECOFONE TECHBYTE
+    </text>
+  </g>
+
+  <!-- Single Device / Graphic Showcase -->
+  <g transform="translate(480, 75)" filter="url(#shadow)">
+    <!-- Outer Laptop / Phone / Gear -->
+    <rect x="0" y="30" width="240" height="160" rx="14" fill="#0f172a" stroke="#64748b" stroke-width="3" />
+    <rect x="10" y="40" width="220" height="140" rx="8" fill="#1e293b" />
+    <!-- Screen Content Display -->
+    <circle cx="120" cy="110" r="38" fill="#16a34a" opacity="0.2" />
+    <circle cx="120" cy="110" r="26" fill="#16a34a" opacity="0.5" />
+    <text x="120" y="115" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">
+      CERTIFIED
+    </text>
+    <!-- Base / Stand -->
+    <path d="M -30 200 L 270 200 L 250 215 L -10 215 Z" fill="#475569" />
+  </g>
+</svg>
