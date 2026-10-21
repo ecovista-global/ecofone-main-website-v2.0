@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { BLOG_POSTS } from '../../data/blogs';
+import { getBlogPosts } from '../../lib/blogs-server';
 import BlogListingClient from './blog-listing-client';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'TechByte | EcoFone Smartphone News, Reviews & Refurbished Tech Guides',
@@ -43,6 +45,9 @@ export const metadata: Metadata = {
 };
 
 export default function BlogListingPage() {
+  const allPosts = getBlogPosts();
+  const publicPosts = allPosts.filter((p) => (p.status || 'PUBLISHED') !== 'DRAFT');
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
@@ -56,7 +61,7 @@ export default function BlogListingPage() {
       url: 'https://www.ecofone.co.in',
       logo: 'https://www.ecofone.co.in/logo.jpg',
     },
-    blogPost: BLOG_POSTS.map((post) => ({
+    blogPost: publicPosts.map((post) => ({
       '@type': 'BlogPosting',
       headline: post.title,
       description: post.seoDesc,
@@ -77,7 +82,7 @@ export default function BlogListingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <BlogListingClient posts={BLOG_POSTS} />
+      <BlogListingClient posts={publicPosts} />
     </>
   );
 }

@@ -9,6 +9,7 @@ import BrandsManager from './components/brands-manager';
 import ResearchManager from './components/research-manager';
 import CareersManager from './components/careers-manager';
 import StoresManager from './components/stores-manager';
+import BlogsManager from './components/blogs-manager';
 
 interface FranchiseApp {
   id: string;
@@ -280,15 +281,16 @@ export default function AdminDashboardPage() {
   const [subAdminError, setSubAdminError] = useState('');
   const [subAdminSuccess, setSubAdminSuccess] = useState('');
   const [newAdminPermissions, setNewAdminPermissions] = useState<string[]>(['franchise', 'contact']);
-  const [allowedPermissions, setAllowedPermissions] = useState<string[]>(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'services', 'brands', 'research', 'careers']);
+  const [allowedPermissions, setAllowedPermissions] = useState<string[]>(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'services', 'brands', 'research', 'careers', 'blogs']);
   
   const [adminLoginError, setAdminLoginError] = useState('');
   const [adminPhoneDisplay, setAdminPhoneDisplay] = useState('+91 99199 65499');
   const [adminEmailDisplay, setAdminEmailDisplay] = useState('business@ecofone.co.in');
 
   // Active Tab & Sidebar mobile states
-  const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers'>('franchise');
+  const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers' | 'blogs'>('franchise');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [blogsCount, setBlogsCount] = useState<number>(0);
 
   // Revenue Streamdesk CMS state
   const [servicesData, setServicesData] = useState<any>({
@@ -1033,6 +1035,16 @@ export default function AdminDashboardPage() {
         }
       } catch (e) {
         console.warn('Could not load certificates from API:', e);
+      }
+
+      // Fetch blogs registry count
+      try {
+        const blogsData = await api.getBlogs();
+        if (blogsData && Array.isArray(blogsData.blogs)) {
+          setBlogsCount(blogsData.blogs.length);
+        }
+      } catch (e) {
+        console.warn('Could not load blogs from API:', e);
       }
 
       setApplications(franchises);
@@ -2071,7 +2083,7 @@ export default function AdminDashboardPage() {
       localStorage.setItem('ecofone_admin_password', inputPassword);
 
       setAdminRole('master');
-      setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+      setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers', 'blogs']);
       setIsAdmin(true);
       setAdminPasswordInput('');
       setAdminLoginError('');
@@ -2532,6 +2544,19 @@ export default function AdminDashboardPage() {
                 <span>Manage Outlets ({stores.length})</span>
               </button>
             )}
+            {(allowedPermissions.includes('blogs') || adminRole === 'master') && (
+              <button
+                onClick={() => { setActiveTab('blogs'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'blogs'
+                    ? 'bg-[#0d2822] border border-[#10b981]/30 text-[#10b981] border-l-2 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">📝</span>
+                <span>MANAGE BLOGS ({blogsCount})</span>
+              </button>
+            )}
             {allowedPermissions.includes('team') && (
               <button
                 onClick={() => { setActiveTab('team'); setIsSidebarOpen(false); }}
@@ -2694,7 +2719,7 @@ export default function AdminDashboardPage() {
             <span className="hidden sm:inline shrink-0">EcoFone Console</span>
             <span className="text-slate-600 hidden sm:inline shrink-0">/</span>
             <span className="text-white capitalize truncate">
-              {activeTab === 'stores' ? 'outlets' : activeTab === 'franchise' ? 'franchise applications' : activeTab === 'contact' ? 'contact inquiries' : activeTab === 'reviews' ? 'reviews moderation' : activeTab === 'logs' ? 'export logs' : activeTab === 'certificates' ? 'certificates generator' : activeTab === 'services' ? 'Revenue Desk CMS' : activeTab === 'brands' ? 'Top Brands CMS' : 'security settings'}
+              {activeTab === 'blogs' ? 'TechByte Blog Management' : activeTab === 'stores' ? 'outlets' : activeTab === 'franchise' ? 'franchise applications' : activeTab === 'contact' ? 'contact inquiries' : activeTab === 'reviews' ? 'reviews moderation' : activeTab === 'logs' ? 'export logs' : activeTab === 'certificates' ? 'certificates generator' : activeTab === 'services' ? 'Revenue Desk CMS' : activeTab === 'brands' ? 'Top Brands CMS' : 'security settings'}
             </span>
           </div>
 
@@ -2740,36 +2765,38 @@ export default function AdminDashboardPage() {
         <div className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
 
           {/* Dashboard KPIs Summary Blocks */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Franchise Requests</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.franchiseCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Active</span>
+          {activeTab !== 'blogs' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Franchise Requests</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.franchiseCount}</p>
+                  <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Active</span>
+                </div>
+              </div>
+              <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Customer Inquiries</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.contactCount}</p>
+                  <span className="text-[8px] sm:text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-full font-bold border border-orange-500/15">Inbox</span>
+                </div>
+              </div>
+              <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Registered Outlets</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-emerald-400">{kpis.storesCount}</p>
+                  <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Verified</span>
+                </div>
+              </div>
+              <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Pending Reviews</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-amber-400">{kpis.pendingReviewsCount}</p>
+                  <span className="text-[8px] sm:text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full font-bold border border-amber-500/15">Moderate</span>
+                </div>
               </div>
             </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Customer Inquiries</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.contactCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-full font-bold border border-orange-500/15">Inbox</span>
-              </div>
-            </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Registered Outlets</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-emerald-400">{kpis.storesCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Verified</span>
-              </div>
-            </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Pending Reviews</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-amber-400">{kpis.pendingReviewsCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full font-bold border border-amber-500/15">Moderate</span>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Main workspace dynamic rendering */}
           <div className="relative">
@@ -3057,6 +3084,9 @@ export default function AdminDashboardPage() {
 
             {/* C. OUTLET REGISTERS & STORE MANAGER */}
             {activeTab === 'stores' && <StoresManager />}
+
+            {/* TECHBYTE BLOG MANAGEMENT & PUBLISHING */}
+            {activeTab === 'blogs' && <BlogsManager onCountChange={(c) => setBlogsCount(c)} />}
 
             {/* D. SYSTEM LOGS (EXPORT HISTORY) VIEW */}
             {activeTab === 'logs' && (

@@ -27,24 +27,33 @@ export default function BlogListingClient({ posts }: BlogListingClientProps) {
     }
   };
 
-  // 1. Featured Bento Article (Flagship)
-  const featuredPost = posts.find(p => p.id === 'oneplus-16-vs-oneplus-15-biggest-upgraded-flagship') || posts[0];
+  // 1. Featured Bento Article (Flagship) - checks explicit Hero Main Featured placement first
+  const explicitFeatured = posts.find(p => p.placement === 'Hero Main Featured' || p.category === 'Hero Main Featured');
+  const featuredPost = explicitFeatured || posts.find(p => p.id === 'oneplus-16-vs-oneplus-15-biggest-upgraded-flagship') || posts[0];
 
-  // 2. Bento Side 4 Articles (135px x 80px thumbnails, strictly rectangular with rounded-md 6px)
-  const bentoSidePosts = [
+  // 2. Bento Side 4 Articles
+  const explicitSidePosts = posts.filter(p => (p.placement === 'Hero Right Trending' || p.category === 'Hero Right Trending') && p.id !== featuredPost?.id);
+  const fallbackSidePosts = [
     posts.find(p => p.id === 'iphone-17-pro-price-drops-festival-sale') || posts[1],
     posts.find(p => p.id === 'iqoo-neo-12-launch-date-specs-expected-price') || posts[2],
     posts.find(p => p.id === 'oppo-find-x10-series-launch-date-specs-india') || posts[3],
     posts.find(p => p.id === 'prime-lens-vs-zoom-lens-better-for-photography') || posts[4],
   ].filter(Boolean) as BlogPost[];
+  const bentoSidePosts = explicitSidePosts.length > 0 
+    ? [...explicitSidePosts, ...fallbackSidePosts.filter(fb => !explicitSidePosts.some(s => s.id === fb.id))].slice(0, 4)
+    : fallbackSidePosts;
 
   // 3. Trending Horizontal Articles
-  const trendingPosts = posts.filter(p => p.category === 'Trending');
+  const trendingPosts = posts.filter(p => 
+    (p.category === 'Trending' || p.category === 'Trending Feed' || p.placement === 'Trending Feed' || p.placement === 'Main Feed / Trending') && 
+    p.id !== featuredPost?.id && 
+    !bentoSidePosts.some(b => b.id === p.id)
+  );
 
-  // 4. Categorized Row Posts (ensure at least 3+ cards for each)
-  const popularNewsPosts = posts.filter(p => p.category === 'Popular News');
-  const tipsTricksPosts = posts.filter(p => p.category === 'Tips & Tricks');
-  const techNewsPosts = posts.filter(p => p.category === 'Tech News' && p.id !== featuredPost?.id);
+  // 4. Categorized Row Posts (ensure newly added posts in these categories show up)
+  const popularNewsPosts = posts.filter(p => (p.category === 'Popular News' || p.placement === 'Popular News') && p.id !== featuredPost?.id);
+  const tipsTricksPosts = posts.filter(p => (p.category === 'Tips & Tricks' || p.placement === 'Tips & Tricks') && p.id !== featuredPost?.id);
+  const techNewsPosts = posts.filter(p => (p.category === 'Tech News' || p.placement === 'Tech News' || p.category === 'Market Trends') && p.id !== featuredPost?.id);
 
   return (
     <div className="w-full bg-[#f8faf9] min-h-screen font-sans text-slate-900 pb-20">

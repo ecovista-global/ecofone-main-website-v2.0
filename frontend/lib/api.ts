@@ -103,7 +103,7 @@ export const api = {
     apiRequest(`tradein/quotes/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // CMS
-  getBlogs: () => apiRequest('cms/blogs'),
+  getLegacyCmsBlogs: () => apiRequest('cms/blogs'),
   getBlogBySlug: (slug: string) => apiRequest(`cms/blogs/${slug}`),
   getReviews: () => apiRequest('cms/reviews'),
   getReviewsAdmin: () => apiRequest('cms/reviews/admin'),
@@ -292,6 +292,50 @@ export const api = {
     const query = clearAll ? '?clearAll=true' : `?id=${encodeURIComponent(id)}`;
     const res = await fetch(`/api/contact${query}`, {
       method: 'DELETE'
+    });
+    return await res.json();
+  },
+
+  // Blog Management & Publishing CMS (TechByte)
+  getBlogs: async (params?: { category?: string; status?: string; query?: string; slug?: string }) => {
+    try {
+      const query = params ? new URLSearchParams(params as any).toString() : '';
+      const res = await fetch(`/api/blogs${query ? `?${query}` : ''}`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.error('Error in getBlogs API:', e);
+    }
+    return { success: false, blogs: [] };
+  },
+  createBlog: async (payload: any) => {
+    const res = await fetch('/api/blogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  },
+  updateBlog: async (idOrPayload: string | any, maybePayload?: any) => {
+    const payload = typeof idOrPayload === 'string' ? { id: idOrPayload, ...maybePayload } : idOrPayload;
+    const res = await fetch('/api/blogs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  },
+  deleteBlog: async (id: string) => {
+    const res = await fetch(`/api/blogs?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return await res.json();
+  },
+  uploadBlogImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/blogs/upload', {
+      method: 'POST',
+      body: formData,
     });
     return await res.json();
   },
