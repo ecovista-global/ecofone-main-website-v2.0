@@ -112,7 +112,6 @@ export default function Navbar() {
     { name: 'About Us', href: '/about' },
     { name: 'Our Services', href: '/services' },
     { name: 'Franchise', href: '/franchise' },
-    { name: 'Blogs', href: '/blog' },
     { name: 'Contact Us', href: '/contact' },
   ];
 
