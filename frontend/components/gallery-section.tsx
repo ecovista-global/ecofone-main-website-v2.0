@@ -12,7 +12,7 @@ import {
   MapPin,
   Camera,
 } from "lucide-react";
-import { DEFAULT_GALLERY_ITEMS, GalleryItemData } from "@/lib/gallery-data";
+import { DEFAULT_GALLERY_ITEMS, GalleryItemData } from "@/types/gallery";
 
 interface GallerySectionProps {
   initialData?: GalleryItemData[];
