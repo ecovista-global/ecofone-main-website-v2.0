@@ -149,8 +149,20 @@ export default function Navbar() {
 
           {/* Desktop Apply Button */}
           <Link
-            href="/franchise?scroll=apply"
-            className="hidden sm:inline-flex items-center gap-2 bg-[#ea580c] hover:bg-[#c2410c] text-white text-[13px] font-bold px-6 py-2.5 rounded-full transition-all duration-200 hover:scale-[1.02] shadow-[0_4px_14px_rgba(234,88,12,0.25)] whitespace-nowrap"
+            href="/franchise#apply-franchise-form"
+            onClick={(e) => {
+              if (pathname === '/franchise') {
+                e.preventDefault();
+                const el = document.getElementById('apply-franchise-form');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                  setTimeout(() => {
+                    document.getElementById('applicant-name')?.focus();
+                  }, 400);
+                }
+              }
+            }}
+            className="hidden sm:inline-flex items-center gap-2 bg-[#E85D04] hover:bg-[#D05000] text-white text-[13px] font-bold px-5 py-2.5 rounded-lg transition-colors duration-150 shadow-sm whitespace-nowrap"
           >
             <span>Apply for Franchise</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -161,7 +173,7 @@ export default function Navbar() {
           {/* Mobile Hamburger Toggle */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-full transition-all focus:outline-none text-slate-800 hover:text-slate-950 hover:bg-slate-100 min-h-[40px] min-w-[40px] flex items-center justify-center"
+            className="md:hidden p-2 rounded-sm transition-colors focus:outline-none text-slate-800 hover:text-slate-950 hover:bg-slate-100 min-h-[40px] min-w-[40px] flex items-center justify-center border border-slate-200"
             aria-label="Toggle Navigation Menu"
           >
             {isOpen ? (
@@ -186,9 +198,9 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    className={`px-4 py-2.5 rounded-sm text-sm font-bold transition-all ${
                       isActive
-                        ? 'bg-emerald-50 text-emerald-900'
+                        ? 'bg-emerald-50 text-[#0F3D23]'
                         : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
@@ -200,8 +212,21 @@ export default function Navbar() {
             
             <div className="border-t border-slate-100 pt-3">
               <Link
-                href="/franchise?scroll=apply"
-                className="w-full text-center bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md"
+                href="/franchise#apply-franchise-form"
+                onClick={(e) => {
+                  setIsOpen(false);
+                  if (pathname === '/franchise') {
+                    e.preventDefault();
+                    const el = document.getElementById('apply-franchise-form');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth' });
+                      setTimeout(() => {
+                        document.getElementById('applicant-name')?.focus();
+                      }, 400);
+                    }
+                  }
+                }}
+                className="w-full text-center bg-[#E85D04] hover:bg-[#D05000] text-white text-xs font-bold py-3 rounded-lg transition-colors duration-150 flex items-center justify-center gap-2 shadow-sm"
               >
                 <span>Apply for Franchise</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">

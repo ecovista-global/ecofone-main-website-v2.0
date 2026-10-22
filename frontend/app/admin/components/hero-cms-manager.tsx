@@ -42,8 +42,8 @@ export default function HeroCmsManager() {
       if (data) {
         setCmsData(data);
       }
-    } catch (err) {
-      console.error('Failed to fetch CMS content:', err);
+    } catch (err: any) {
+      console.warn('Failed to fetch CMS content:', err?.message || err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function HeroCmsManager() {
         throw new Error(res?.error || 'Save failed');
       }
     } catch (err: any) {
-      console.error('Save error:', err);
+      console.warn('Save error:', err?.message || err);
       showToast('error', err.message || 'Failed to save changes');
     } finally {
       setSaving(false);

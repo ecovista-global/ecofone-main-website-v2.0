@@ -35,8 +35,8 @@ export default function FaqsManager() {
       if (data && data.faqs) {
         setFaqs(data.faqs);
       }
-    } catch (err) {
-      console.error('Failed to load FAQs:', err);
+    } catch (err: any) {
+      console.warn('Failed to load FAQs:', err?.message || err);
     } finally {
       setLoading(false);
     }

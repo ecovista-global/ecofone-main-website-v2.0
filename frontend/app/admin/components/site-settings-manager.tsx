@@ -70,8 +70,8 @@ export default function SiteSettingsManager() {
           }
         });
       }
-    } catch (err) {
-      console.error('Failed to load site settings:', err);
+    } catch (err: any) {
+      console.warn('Failed to load site settings:', err?.message || err);
     } finally {
       setLoading(false);
     }

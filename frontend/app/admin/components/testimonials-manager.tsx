@@ -48,8 +48,8 @@ export default function TestimonialsManager() {
         setInvestors(data.testimonials.investors || []);
         setCustomers(data.testimonials.customers || []);
       }
-    } catch (err) {
-      console.error('Failed to load testimonials:', err);
+    } catch (err: any) {
+      console.warn('Failed to load testimonials:', err?.message || err);
     } finally {
       setLoading(false);
     }

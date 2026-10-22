@@ -1,3 +1,5 @@
+import defaultWebsiteCms from '../data/website_cms.json';
+
 const DIRECT_BACKEND_URL = 'https://nextjs-642200683.kloudbeansite.com/api/v1';
 
 function getBaseUrl(): string {
@@ -232,16 +234,23 @@ export const api = {
 
   // Website Core Pages CMS
   getCmsContent: async () => {
+    if (typeof window === 'undefined') {
+      return defaultWebsiteCms;
+    }
     try {
-      const res = await fetch('/api/cms/content');
+      const res = await fetch('/api/cms/content', {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
-        return data.data;
+        if (data && data.data) {
+          return data.data;
+        }
       }
-    } catch (e) {
-      console.error('Error fetching CMS content:', e);
+    } catch (e: any) {
+      console.warn('CMS content fetch unavailable, using fallback data:', e?.message || e);
     }
-    return null;
+    return defaultWebsiteCms;
   },
   updateCmsContent: async (payload: any) => {
     try {
@@ -252,7 +261,8 @@ export const api = {
       });
       return await res.json();
     } catch (e: any) {
-      return { success: false, error: e.message };
+      console.warn('CMS content update error:', e?.message || e);
+      return { success: false, error: e?.message || 'Update failed' };
     }
   },
   uploadCmsMedia: async (file: File) => {

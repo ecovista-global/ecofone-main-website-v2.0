@@ -38,8 +38,8 @@ export default function HomePage() {
       try {
         const data = await api.getCmsContent();
         if (data) setCms(data);
-      } catch (e) {
-        console.error('Failed to load CMS content on homepage:', e);
+      } catch (e: any) {
+        console.warn('Could not load CMS content on homepage:', e?.message || e);
       }
     };
     fetchCms();

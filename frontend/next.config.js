@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   async rewrites() {
-    const backendHost = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+    const backendHost = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'https://nextjs-642200683.kloudbeansite.com';
     return [
       {
         source: '/api/v1/:path*',

@@ -49,8 +49,8 @@ export default function PartnerStoriesManager() {
       if (data && data.partnerStories) {
         setStories(data.partnerStories);
       }
-    } catch (err) {
-      console.error('Failed to fetch partner stories:', err);
+    } catch (err: any) {
+      console.warn('Failed to fetch partner stories:', err?.message || err);
     } finally {
       setLoading(false);
     }
