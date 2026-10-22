@@ -33,11 +33,9 @@ import {
 import { useScrollReveal } from '../lib/use-scroll-reveal';
 
 /* =========================================================================
-   1. CHOOSE FRANCHISE MODEL (FICO vs FIFO Dedicated 3-Column Comparison)
+   1. CHOOSE FRANCHISE MODEL (FICO vs FIFO Dedicated Comparison)
    ========================================================================= */
 export function ChooseFranchiseModel() {
-  const { ref: sectionRef, isRevealed } = useScrollReveal({ threshold: 0.1 });
-
   const scrollToFico = () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('open-fico-breakdown'));
@@ -59,196 +57,130 @@ export function ChooseFranchiseModel() {
   };
 
   return (
-    <section 
-      id="choose-model" 
-      ref={sectionRef}
-      className={`w-full bg-[#FAF9F6] py-20 lg:py-24 border-b border-slate-200/80 scroll-mt-28 reveal-on-scroll ${isRevealed ? 'is-revealed' : ''}`}
-    >
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div id="choose-model" className="w-full relative overflow-hidden pt-8 pb-24 scroll-mt-28">
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-50/50 via-white to-emerald-50/50 -z-10"></div>
+      
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative">
         
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 mb-3.5 px-3 py-1 bg-white border border-slate-200/80 rounded-md shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-[#E85D04]"></span>
-            <span className="text-[11px] font-bold tracking-widest uppercase text-[#0F3D23]">
-              B2B PARTNERSHIP ARCHITECTURE
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
-            Choose Your <span className="text-[#E85D04]">Franchise Model</span>
-          </h1>
-          <p className="text-slate-600 text-base sm:text-lg leading-relaxed font-normal">
-            Institutional retail opportunities engineered for capital efficiency — invest passively with company management or operate hands-on with territorial exclusivity.
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-[#061C0F] mb-4">
+            Choose Your <span className="text-[#ea580c]">Franchise Model</span>
+          </h2>
+          <p className="text-slate-600 text-lg">
+            Flexible opportunities designed for different types of partners — <br className="hidden md:block"/> whether you want to invest passively or run the store hands-on.
           </p>
         </div>
 
-        {/* Dedicated 3-Column Desktop Grid (Fixes Connector Overlap Bug) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-stretch max-w-6xl mx-auto">
+        {/* Models Grid */}
+        <div className="relative w-full mx-auto">
           
-          {/* 1. FICO Card */}
-          <div className="bg-white rounded-xl p-6 sm:p-8 md:p-10 border border-slate-200/80 shadow-sm relative flex flex-col justify-between hover:border-orange-300 hover:shadow-md transition-all duration-200">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <span className="inline-block bg-orange-50 border border-orange-200/70 text-[#E85D04] font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-md">
-                  FICO MODEL
-                </span>
-                <div className="w-11 h-11 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E85D04]">
-                  <Briefcase className="w-5 h-5" />
-                </div>
-              </div>
-
-              <h2 className="text-2xl sm:text-[28px] font-black text-slate-900 leading-tight mb-3 tracking-tight">
-                Franchise Investor,<br />Company Operated
-              </h2>
-              <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                Provide retail capital and let EcoFone central operations manage staffing, inventory merchandising, POS systems, and daily footfall conversions.
-              </p>
-              
-              <div className="border-t border-slate-100 pt-5 mb-8">
-                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Core Structural Advantages</h3>
-                <ul className="space-y-3.5">
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-orange-50 border border-orange-200/70 text-[#E85D04] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Minimal day-to-day operational involvement required</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-orange-50 border border-orange-200/70 text-[#E85D04] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Professionally staffed and managed under EcoFone SOPs</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-orange-50 border border-orange-200/70 text-[#E85D04] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Transparent monthly revenue share or minimum return floor</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-orange-50 border border-orange-200/70 text-[#E85D04] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Ideal for commercial property owners and passive retail investors</span>
-                  </li>
-                </ul>
-              </div>
+          {/* Middle Graphic (Desktop) */}
+          <div className="hidden lg:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex-col items-center z-10 w-48 pointer-events-none">
+            
+            <div className="relative w-32 h-32 bg-white rounded-full shadow-xl border border-slate-100 flex items-center justify-center mb-2 z-20 pointer-events-auto">
+              <img src="/logo.jpg" alt="EcoFone" className="w-20 h-auto" />
             </div>
             
-            <button 
-              type="button"
-              onClick={scrollToFico}
-              className="w-full bg-[#E85D04] hover:bg-[#D05000] text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-lg transition-all duration-150 shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-            >
-              <span>View Detailed Breakdown</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 2. Middle Connector Column (Never Overlaps Text) */}
-          <div className="hidden lg:flex flex-col items-center justify-center px-2 py-4 self-center space-y-4 min-w-[150px]">
-            {/* Top Indicator to FICO */}
-            <div className="flex flex-col items-center text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Capital Route</span>
-              <span className="text-xs font-black text-[#E85D04] tracking-tight">Invest Passively</span>
-              <div className="w-6 h-6 rounded-full bg-orange-50 text-[#E85D04] flex items-center justify-center mt-1 border border-orange-200/60">
-                <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-              </div>
-            </div>
-
-            {/* Center Logo Card */}
-            <div className="w-20 h-20 bg-white rounded-xl shadow-sm border border-slate-200/80 p-3 flex items-center justify-center">
-              <img 
-                src="/logo.jpg" 
-                alt="EcoFone Enterprise" 
-                className="w-full h-auto object-contain max-h-12" 
-                width="64"
-                height="32"
-              />
-            </div>
-
-            {/* Bottom Indicator to FIFO */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-6 h-6 rounded-full bg-[#eefcf2] text-[#0F3D23] flex items-center justify-center mb-1 border border-emerald-200/60">
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-xs font-black text-[#0F3D23] tracking-tight">Operate Hands-On</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mt-0.5">Retail Route</span>
-            </div>
-          </div>
-
-          {/* Mobile/Tablet Connector Badge (Below lg) */}
-          <div className="lg:hidden flex items-center justify-center py-1">
-            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-slate-200/80 shadow-xs text-xs font-bold text-slate-600">
-              <span className="text-[#E85D04]">Passive Investment</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-[#0F3D23]">Active Retail</span>
-            </div>
-          </div>
-
-          {/* 3. FIFO Card */}
-          <div className="bg-white rounded-xl p-6 sm:p-8 md:p-10 border border-slate-200/80 shadow-sm relative flex flex-col justify-between hover:border-emerald-300 hover:shadow-md transition-all duration-200">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <span className="inline-block bg-[#eefcf2] border border-emerald-200/70 text-[#0F3D23] font-bold text-xs uppercase tracking-wider px-3 py-1 rounded-md">
-                  FIFO / PARTNER MODEL
-                </span>
-                <div className="w-11 h-11 rounded-xl bg-[#eefcf2] border border-emerald-100 flex items-center justify-center text-[#0F3D23]">
-                  <Store className="w-5 h-5" />
-                </div>
-              </div>
-
-              <h2 className="text-2xl sm:text-[28px] font-black text-slate-900 leading-tight mb-3 tracking-tight">
-                Franchise Investor,<br />Franchise Operated
-              </h2>
-              <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                Operate your own branded EcoFone experience center or integrate a Shop-in-Shop inside your existing electronics outlet with full corporate supply support.
-              </p>
-              
-              <div className="border-t border-slate-100 pt-5 mb-8">
-                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Core Structural Advantages</h3>
-                <ul className="space-y-3.5">
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-[#eefcf2] border border-emerald-200/70 text-[#0F3D23] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Full direct control over local store operations and customer relationships</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-[#eefcf2] border border-emerald-200/70 text-[#0F3D23] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Higher upside margin potential (15–25%) across device sales and repairs</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-[#eefcf2] border border-emerald-200/70 text-[#0F3D23] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Complete technical diagnostics training and POS software suite</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
-                    <div className="w-5 h-5 rounded-md bg-[#eefcf2] border border-emerald-200/70 text-[#0F3D23] flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <span>Ideal for telecom retailers, mobile dealers, and retail entrepreneurs</span>
-                  </li>
-                </ul>
-              </div>
+            {/* Arrows */}
+            <div className="absolute top-1/2 left-[-80px] -translate-y-1/2 text-ecoOrange-500">
+              <svg className="w-20 h-8" viewBox="0 0 100 40" fill="none" preserveAspectRatio="none">
+                <path d="M100 20 C60 20 40 10 0 20" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <polygon points="0,20 10,15 10,25" fill="currentColor"/>
+              </svg>
+              <div className="absolute -top-6 left-2 text-xs font-bold italic rotate-[-10deg] text-[#ea580c]">Invest<br/>Passively</div>
             </div>
             
-            <button 
-              type="button"
-              onClick={scrollToShopInShop}
-              className="w-full bg-[#0F3D23] hover:bg-[#0A2917] text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-lg transition-all duration-150 shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-            >
-              <span>View Detailed Breakdown</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="absolute top-1/2 right-[-80px] -translate-y-1/2 text-emerald-500">
+              <svg className="w-20 h-8" viewBox="0 0 100 40" fill="none" preserveAspectRatio="none">
+                <path d="M0 20 C40 20 60 10 100 20" stroke="currentColor" strokeWidth="2" fill="none"/>
+                <polygon points="100,20 90,15 90,25" fill="currentColor"/>
+              </svg>
+              <div className="absolute -top-6 right-2 text-xs font-bold italic rotate-[10deg] text-emerald-600">Operate<br/>Hands-On</div>
+            </div>
+            
           </div>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-[320px] relative z-0">
+            
+            {/* FICO Card */}
+            <div className="bg-[#fff9f5] rounded-3xl p-8 border-2 border-orange-100 shadow-[0_20px_40px_-15px_rgba(234,88,12,0.1)] relative">
+              <div className="absolute top-8 right-8 w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-ecoOrange-500">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              </div>
+              <div className="inline-block bg-orange-100 text-ecoOrange-600 font-black px-4 py-1.5 rounded-full text-sm mb-6">FICO</div>
+              <h3 className="text-2xl lg:text-[28px] font-black text-slate-900 leading-tight mb-3">Franchise Investor,<br/>Company Operated</h3>
+              <p className="text-slate-600 text-sm mb-8 pr-12">Invest and let EcoFone handle the operations, staffing and growth.</p>
+              
+              <ul className="space-y-3 mb-10">
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-ecoOrange-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Minimal operational involvement
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-ecoOrange-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Professionally managed by EcoFone
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-ecoOrange-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Transparent revenue sharing model
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-ecoOrange-500 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Ideal for investors and existing store owners
+                </li>
+              </ul>
+              
+              <button 
+                type="button"
+                onClick={scrollToFico}
+                className="w-full bg-[#ea580c] hover:bg-[#c2410c] text-white font-bold py-4 rounded-full transition-colors shadow-lg cursor-pointer"
+              >
+                View Detailed Breakdown →
+              </button>
+            </div>
+
+            {/* FIFO Card */}
+            <div className="bg-[#f5fbf7] rounded-3xl p-8 border-2 border-emerald-100 shadow-[0_20px_40px_-15px_rgba(16,185,129,0.1)] relative">
+              <div className="absolute top-8 right-8 w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+              </div>
+              <div className="inline-block bg-emerald-200 text-emerald-800 font-black px-4 py-1.5 rounded-full text-sm mb-6">FIFO</div>
+              <h3 className="text-2xl lg:text-[28px] font-black text-slate-900 leading-tight mb-3">Franchise Investor,<br/>Franchise Operated</h3>
+              <p className="text-slate-600 text-sm mb-8 pr-12">You own and operate the store with full control and brand support.</p>
+              
+              <ul className="space-y-3 mb-10">
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Full operational control
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Higher margin potential
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Complete training and system support
+                </li>
+                <li className="flex items-start gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</div>
+                  Ideal for entrepreneurs and existing retailers
+                </li>
+              </ul>
+              
+              <button 
+                type="button"
+                onClick={scrollToShopInShop}
+                className="w-full bg-[#061C0F] hover:bg-emerald-900 text-white font-bold py-4 rounded-full transition-colors shadow-lg cursor-pointer"
+              >
+                View Detailed Breakdown →
+              </button>
+            </div>
+
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
