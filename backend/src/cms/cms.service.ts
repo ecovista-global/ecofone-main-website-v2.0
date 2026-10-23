@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class CmsService {
+  private readonly logger = new Logger(CmsService.name);
   private r2Client: S3Client;
 
   constructor(private prisma: PrismaService) {
