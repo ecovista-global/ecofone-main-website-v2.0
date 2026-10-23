@@ -88,6 +88,7 @@ export default function FranchiseLeadForm() {
 
     setStatus('submitting');
     try {
+      setGeneralError('');
       // 1. Backend CRM database
       let numericBudget = 1000000;
       if (formData.budget.includes('50L+')) numericBudget = 5000000;
@@ -95,24 +96,31 @@ export default function FranchiseLeadForm() {
       else if (formData.budget.includes('20 - 25')) numericBudget = 2200000;
       else if (formData.budget.includes('10 - 12')) numericBudget = 1100000;
 
-      await api.applyFranchise({
-        applicantName: formData.name.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.trim(),
-        locationPreference: `${formData.city.trim()}, ${formData.state.trim()}`,
-        investmentCapacity: numericBudget,
-        experienceDesc: `Model: ${formData.franchiseType} | Space: ${formData.ownSpace} | Budget: ${formData.budget} | Message: ${formData.message || 'None'}`
+      let applied = false;
+      try {
+        await api.applyFranchise({
+          applicantName: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          locationPreference: `${formData.city.trim()}, ${formData.state.trim()}`,
+          investmentCapacity: numericBudget,
+          experienceDesc: `Model: ${formData.franchiseType} | Space: ${formData.ownSpace} | Budget: ${formData.budget} | Message: ${formData.message || 'None'}`
+        });
+        applied = true;
+      } catch (backendErr: any) {
+        console.warn('Direct backend franchise apply error, trying lead route:', backendErr?.message);
+      }
+
+      // 2. Real-time Zoho SMTP dispatch + persistence fallback
+      const leadRes = await fetch('/api/franchise/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
 
-      // 2. Real-time Zoho SMTP dispatch
-      try {
-        await fetch('/api/franchise/lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-      } catch (mailErr) {
-        console.warn('Franchise email dispatch warning:', mailErr);
+      if (!leadRes.ok && !applied) {
+        const errorData = await leadRes.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Unable to record your application. Please try again.');
       }
 
       setStatus('success');
@@ -120,9 +128,9 @@ export default function FranchiseLeadForm() {
         (window as any).dataLayer.push({ event: 'franchise_lead_submit' });
       }
     } catch (err: any) {
-      console.warn('Franchise application submission error:', err);
-      // Fallback: still treat as recorded
-      setStatus('success');
+      console.error('Franchise application submission failed:', err);
+      setStatus('error');
+      setGeneralError(err.message || 'Unable to submit your application. Please check your internet connection or email business@ecofone.co.in directly.');
     }
   };
 

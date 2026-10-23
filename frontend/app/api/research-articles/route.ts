@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { verifyAdminAuth, extractBearerToken } from '@/lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'research_articles.json');
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3001';
 
 const DEFAULT_ARTICLES = [
   {
@@ -43,7 +45,7 @@ const DEFAULT_ARTICLES = [
   }
 ];
 
-function getArticles(): any[] {
+function getLocalArticles(): any[] {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const data = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -56,11 +58,11 @@ function getArticles(): any[] {
     console.error('Error reading research_articles.json:', err);
   }
 
-  saveArticles(DEFAULT_ARTICLES);
+  saveLocalArticles(DEFAULT_ARTICLES);
   return DEFAULT_ARTICLES;
 }
 
-function saveArticles(articles: any[]) {
+function saveLocalArticles(articles: any[]) {
   try {
     const dir = path.dirname(DATA_FILE);
     if (!fs.existsSync(dir)) {
@@ -74,7 +76,27 @@ function saveArticles(articles: any[]) {
 
 export async function GET() {
   try {
-    const articles = getArticles();
+    // Attempt backend query first
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(`${BACKEND_URL}/api/v1/research`, {
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return NextResponse.json(data);
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    const articles = getLocalArticles();
     return NextResponse.json(articles);
   } catch (err: any) {
     return NextResponse.json(DEFAULT_ARTICLES);
@@ -82,17 +104,90 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    const articles = getArticles();
-    const newArticle = {
+    const token = extractBearerToken(req);
+
+    let savedArticle: any = null;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${BACKEND_URL}/api/v1/research`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        savedArticle = await res.json();
+      }
+    } catch (_) {}
+
+    const articles = getLocalArticles();
+    const newArticle = savedArticle || {
       ...body,
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
     articles.unshift(newArticle);
-    saveArticles(articles);
+    saveLocalArticles(articles);
     return NextResponse.json(newArticle, { status: 201 });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await req.json();
+        id = body.id;
+      } catch (_) {}
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Article ID required' }, { status: 400 });
+    }
+
+    const token = extractBearerToken(req);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      await fetch(`${BACKEND_URL}/api/v1/research/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (_) {}
+
+    const articles = getLocalArticles();
+    const filtered = articles.filter(a => a.id !== id);
+    saveLocalArticles(filtered);
+
+    return NextResponse.json({ success: true, message: 'Article deleted successfully' });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

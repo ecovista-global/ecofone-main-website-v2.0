@@ -152,6 +152,25 @@ export async function GET(req: Request) {
   if (!auth.isAuthorized) {
     return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
   }
+
+  // Query backend PostgreSQL database first
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+    const authHeader = req.headers.get('authorization') || '';
+    const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/career/applications`, {
+      headers: { ...(authHeader && { Authorization: authHeader }) },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const dbApps = await res.json();
+      if (Array.isArray(dbApps) && dbApps.length > 0) {
+        return NextResponse.json(dbApps);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Careers] Backend DB fetch warning, using local fallback:', err?.message);
+  }
+
   const apps = getApplications();
   return NextResponse.json(apps);
 }
@@ -212,6 +231,19 @@ export async function POST(req: Request) {
       status: 'PENDING',
       createdAt: new Date().toISOString()
     };
+
+    // 1. Persist to PostgreSQL backend database
+    try {
+      const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+      await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/career/applications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApp),
+      });
+    } catch (dbErr: any) {
+      console.warn('[Careers] Direct backend DB persistence warning:', dbErr?.message);
+    }
+
     apps.unshift(newApp);
     saveApplications(apps);
 

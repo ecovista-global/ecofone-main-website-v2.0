@@ -53,6 +53,31 @@ export async function POST(req: Request) {
       signoffContactLine: 'Business Operations • Corporate HQ, Lucknow'
     });
 
+    // 1. Persist lead to backend database first
+    let persistedId: string | null = null;
+    try {
+      const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+      const cleanBudget = parseFloat(String(budget).replace(/[^0-9.]/g, '')) || 500000;
+      const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/franchise/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicantName,
+          email: applicantEmail || `${applicantPhone.replace(/\D/g, '')}@applicant.ecofone.co.in`,
+          phone: applicantPhone,
+          locationPreference: location,
+          investmentCapacity: cleanBudget,
+          experienceDesc: `Model: ${model} | Space: ${space} | Notes: ${userMessage}`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        persistedId = data.id || null;
+      }
+    } catch (dbErr: any) {
+      console.warn('[Franchise Lead] Direct backend DB persistence warning:', dbErr?.message);
+    }
+
     if (smtpHost && smtpUser && smtpPass) {
       try {
         const transporter = nodemailer.createTransport({
