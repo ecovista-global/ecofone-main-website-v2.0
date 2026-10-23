@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const smtpHost = process.env.BUSINESS_SMTP_HOST || 'smtp.zoho.in';
     const smtpPort = process.env.BUSINESS_SMTP_PORT ? parseInt(process.env.BUSINESS_SMTP_PORT) : 465;
     const smtpUser = process.env.BUSINESS_SMTP_USER || 'business@ecofone.co.in';
-    const smtpPass = process.env.BUSINESS_SMTP_PASS || '4RvSXQTwhahz';
+    const smtpPass = process.env.BUSINESS_SMTP_PASS;
     const recipientEmail = process.env.BUSINESS_EMAIL || 'business@ecofone.co.in';
 
     // Internal Notification Email for EcoFone Business Relations Team

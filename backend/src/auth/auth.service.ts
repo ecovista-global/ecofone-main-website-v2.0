@@ -202,7 +202,10 @@ export class AuthService {
   }
 
   async masterAdminLogin(password: string): Promise<{ token: string }> {
-    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD') || 'Ecofone@123';
+    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD');
+    if (!masterEnvPassword) {
+      throw new Error('MASTER_ADMIN_PASSWORD environment variable is not configured.');
+    }
 
     // Protect against Long-Password DoS attacks
     if (!password || Buffer.byteLength(password, 'utf8') > 128) {
@@ -267,7 +270,10 @@ export class AuthService {
       throw new BadRequestException('New password must be at least 6 characters long.');
     }
 
-    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD') || 'Ecofone@123';
+    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD');
+    if (!masterEnvPassword) {
+      throw new Error('MASTER_ADMIN_PASSWORD environment variable is not configured.');
+    }
     let isCurrentValid = false;
 
     const masterRecord = await this.prisma.subAdmin.findUnique({
@@ -281,7 +287,7 @@ export class AuthService {
         isCurrentValid = currentPassword === masterRecord.password;
       }
     } else {
-      isCurrentValid = currentPassword === masterEnvPassword || currentPassword === 'Ecofone@123' || currentPassword === 'admin123';
+      isCurrentValid = currentPassword === masterEnvPassword;
     }
 
     if (!isCurrentValid) {

@@ -4,6 +4,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../lib/email-templates';
+import { verifyAdminAuth } from '../../../lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'contact_messages.json');
 
@@ -31,7 +32,11 @@ function saveMessages(messages: any[]) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
   const messages = getMessages();
   return NextResponse.json(messages);
 }
@@ -76,7 +81,7 @@ export async function POST(req: Request) {
     const smtpHost = process.env.BUSINESS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.zoho.in';
     const smtpPort = process.env.BUSINESS_SMTP_PORT ? parseInt(process.env.BUSINESS_SMTP_PORT) : (process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465);
     const smtpUser = process.env.BUSINESS_SMTP_USER || 'business@ecofone.co.in';
-    const smtpPass = process.env.BUSINESS_SMTP_PASS || '4RvSXQTwhahz';
+    const smtpPass = process.env.BUSINESS_SMTP_PASS;
 
     // Target: ONLY business@ecofone.co.in
     const recipientEmails = process.env.BUSINESS_EMAIL || 'business@ecofone.co.in';
@@ -169,6 +174,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const { id, status } = await req.json();
     const messages = getMessages();
     const index = messages.findIndex((m: any) => m.id === id);
@@ -185,6 +195,11 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     const clearAll = url.searchParams.get('clearAll');

@@ -4,6 +4,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../../lib/email-templates';
+import { verifyAdminAuth } from '../../../../lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'careers_applications.json');
 const HR_EMAIL = process.env.HR_EMAIL || 'future@ecofone.co.in';
@@ -36,7 +37,7 @@ async function dispatchEmailToHr(app: any) {
   const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.in';
   const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
   const smtpUser = process.env.SMTP_USER || 'future@ecofone.co.in';
-  const smtpPass = process.env.SMTP_PASS || '1jD5VQjdhRZx';
+  const smtpPass = process.env.SMTP_PASS;
 
   // 1. Internal Notification for EcoFone HR / Talent Team
   const internalEmailHtml = buildEcoFoneEmailHtml({
@@ -146,7 +147,11 @@ async function dispatchEmailToHr(app: any) {
   return { sent: true, method: 'direct_recorded' };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
   const apps = getApplications();
   return NextResponse.json(apps);
 }
@@ -226,6 +231,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const body = await req.json();
     if (!body.id) {
       return NextResponse.json({ success: false, error: 'Application ID required' }, { status: 400 });
@@ -248,6 +258,11 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {

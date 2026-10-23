@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import ExcelJS from 'exceljs';
+import { verifyAdminAuth } from '../../../../lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'careers_applications.json');
 
@@ -19,6 +20,11 @@ function getApplications() {
 
 export async function GET(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'xlsx';
     const apps = getApplications();

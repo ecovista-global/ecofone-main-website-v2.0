@@ -225,17 +225,25 @@ export class EcommerceService {
     }
 
     const rzpOrderId = order.paymentId;
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_mocksecret12345';
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      throw new Error('RAZORPAY_KEY_SECRET environment variable is missing');
+    }
+
+    if (!razorpayPaymentId || !razorpaySignature) {
+      throw new BadRequestException('Payment ID and signature are required');
+    }
 
     const generatedSignature = crypto
       .createHmac('sha256', secret)
       .update(`${rzpOrderId}|${razorpayPaymentId}`)
       .digest('hex');
 
-    const signatureMatch = (generatedSignature === razorpaySignature);
-    const isMockBypass = razorpaySignature === 'rzp_mock_signature';
+    const sigBuf = Buffer.from(razorpaySignature, 'utf-8');
+    const expBuf = Buffer.from(generatedSignature, 'utf-8');
+    const signatureMatch = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
 
-    if (signatureMatch || isMockBypass) {
+    if (signatureMatch) {
       await this.prisma.$transaction(async (tx) => {
         // Update order status to paid
         await tx.order.update({
@@ -282,14 +290,23 @@ export class EcommerceService {
   }
 
   async handleWebhook(payload: any, signature: string): Promise<void> {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_12345';
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      throw new Error('RAZORPAY_WEBHOOK_SECRET environment variable is missing');
+    }
     
+    if (!signature) {
+      throw new BadRequestException('Webhook signature missing');
+    }
+
     const expectedSig = crypto
       .createHmac('sha256', secret)
       .update(JSON.stringify(payload))
       .digest('hex');
 
-    if (expectedSig !== signature) {
+    const sigBuf = Buffer.from(signature, 'utf-8');
+    const expBuf = Buffer.from(expectedSig, 'utf-8');
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       throw new BadRequestException('Invalid webhook signature origin');
     }
 

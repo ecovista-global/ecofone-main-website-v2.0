@@ -2109,7 +2109,37 @@ export default function AdminDashboardPage() {
     setAdminLoginError('');
 
     const inputPassword = adminPasswordInput.trim();
+    const inputUsername = adminUsernameInput.trim();
     if (!inputPassword) return;
+
+    if (inputUsername) {
+      // Sub-admin login with specific username
+      try {
+        const result = await api.subAdminLogin(inputPassword, inputUsername);
+        const { token, user } = result;
+
+        sessionStorage.setItem('ecofone_token', token);
+        sessionStorage.setItem('ecofone_phone', '+91 99199 65499');
+        sessionStorage.setItem('ecofone_admin_role', 'sub-admin');
+
+        const permissions: string[] = user.permissions || ['franchise', 'contact'];
+        setAdminRole('sub-admin');
+        setAllowedPermissions(permissions);
+
+        const firstTab = permissions.find((p) => p !== 'security') || 'franchise';
+        setActiveTab(firstTab as any);
+
+        setIsAdmin(true);
+        setAdminPasswordInput('');
+        setAdminUsernameInput('');
+        setAdminLoginError('');
+        loadDashboardData(false);
+        return;
+      } catch (err: any) {
+        setAdminLoginError(err.message || 'Invalid sub-admin credentials.');
+        return;
+      }
+    }
 
     // 1. Try master admin login directly against backend API (checks database + env)
     try {
@@ -2125,38 +2155,15 @@ export default function AdminDashboardPage() {
       setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers', 'blogs']);
       setIsAdmin(true);
       setAdminPasswordInput('');
+      setAdminUsernameInput('');
       setAdminLoginError('');
       loadDashboardData(false);
       return;
     } catch (masterErr: any) {
-      // 2. If master login fails, try sub-admin login via backend database
-      try {
-        const result = await api.subAdminLogin(inputPassword);
-        const { token, user } = result;
-
-        sessionStorage.setItem('ecofone_token', token);
-        sessionStorage.setItem('ecofone_phone', '+91 99199 65499');
-        sessionStorage.setItem('ecofone_admin_role', 'sub-admin');
-
-        const permissions: string[] = user.permissions || ['franchise', 'contact'];
-        setAdminRole('sub-admin');
-        setAllowedPermissions(permissions);
-
-        // Navigate to first permitted tab
-        const firstTab = permissions.find((p) => p !== 'security') || 'franchise';
-        setActiveTab(firstTab as any);
-
-        setIsAdmin(true);
-        setAdminPasswordInput('');
-        setAdminLoginError('');
-        loadDashboardData(false);
-        return;
-      } catch (subErr: any) {
-        if (masterErr.message?.includes('connection') || masterErr.message?.includes('fetch') || subErr.message?.includes('connection')) {
-          setAdminLoginError('Server waking up, please click Unlock again in a few seconds.');
-        } else {
-          setAdminLoginError('Incorrect password. Please verify your credentials.');
-        }
+      if (masterErr.message?.includes('connection') || masterErr.message?.includes('fetch')) {
+        setAdminLoginError('Server waking up, please click Unlock again in a few seconds.');
+      } else {
+        setAdminLoginError('Incorrect password. If logging in as sub-admin, please enter your username.');
       }
     }
   };
@@ -2451,7 +2458,23 @@ export default function AdminDashboardPage() {
           <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="block text-slate-500 font-semibold text-[10px] uppercase tracking-wider">
-                Administrator Password
+                Username <span className="text-slate-400 font-normal lowercase">(optional for Master Admin)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter username (for sub-admins)"
+                value={adminUsernameInput}
+                onChange={(e) => {
+                  setAdminUsernameInput(e.target.value);
+                  setAdminLoginError('');
+                }}
+                className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-slate-500 font-semibold text-[10px] uppercase tracking-wider">
+                Password
               </label>
               <div className="relative">
                 <input

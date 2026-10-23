@@ -446,14 +446,14 @@ INTERNAL_BACKEND_URL=http://127.0.0.1:4012
 SMTP_HOST=smtp.zoho.in
 SMTP_PORT=465
 SMTP_USER=future@ecofone.co.in
-SMTP_PASS=1jD5VQjdhRZx
+SMTP_PASS=<REDACTED_APP_PASSWORD>
 HR_EMAIL=future@ecofone.co.in
 
 # Zoho Mail SMTP - Business & Franchise Leads
 BUSINESS_SMTP_HOST=smtp.zoho.in
 BUSINESS_SMTP_PORT=465
 BUSINESS_SMTP_USER=business@ecofone.co.in
-BUSINESS_SMTP_PASS=4RvSXQTwhahz
+BUSINESS_SMTP_PASS=<REDACTED_APP_PASSWORD>
 BUSINESS_EMAIL=business@ecofone.co.in
 
 # Optional Google Maps API Key
@@ -462,12 +462,12 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 
 ### Backend (`backend/.env`)
 ```env
-# PostgreSQL Connection (Neon Serverless Pooler)
-DATABASE_URL="postgresql://neondb_owner:npg_EB9knm7bFeCf@ep-blue-sun-adp2jl9q-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-POSTGRES_PRISMA_URL="postgresql://neondb_owner:npg_EB9knm7bFeCf@ep-blue-sun-adp2jl9q-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# PostgreSQL Connection
+DATABASE_URL="postgresql://user:password@localhost:5432/ecofone?sslmode=prefer"
+POSTGRES_PRISMA_URL="postgresql://user:password@localhost:5432/ecofone?sslmode=prefer"
 
 # JWT Secret Key
-JWT_SECRET="ecofone_jwt_super_secret_key"
+JWT_SECRET="replace_with_strong_random_secret_in_production"
 
 # Cloudflare R2 / AWS S3 Storage
 R2_ACCOUNT_ID="your_account_id"

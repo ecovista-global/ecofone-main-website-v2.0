@@ -14,6 +14,16 @@ function getBaseUrl(): string {
 
 const BASE_URL = getBaseUrl();
 
+export function getAdminAuthHeaders(): Record<string, string> {
+  if (typeof window !== 'undefined') {
+    const token = sessionStorage.getItem('ecofone_token') || localStorage.getItem('ecofone_token') || '';
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+  }
+  return {};
+}
+
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   // Read stored client JWT token
   let token = '';
@@ -166,7 +176,8 @@ export const api = {
   reorderTeamMembers: (ids: string[]) => apiRequest('cms/team-reorder', { method: 'PATCH', body: JSON.stringify({ ids }) }),
 
   // Sub-Admin management
-  subAdminLogin: (password: string) => apiRequest('sub-admin/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  subAdminLogin: (password: string, username?: string) =>
+    apiRequest('sub-admin/login', { method: 'POST', body: JSON.stringify({ password, username: username || '' }) }),
   listSubAdmins: () => apiRequest('sub-admin'),
   createSubAdmin: (payload: { username: string; password: string; permissions: string[] }) =>
     apiRequest('sub-admin', { method: 'POST', body: JSON.stringify(payload) }),
@@ -313,7 +324,9 @@ export const api = {
   // Career Candidate Applications
   getCareerApplications: async () => {
     try {
-      const res = await fetch('/api/careers/applications');
+      const res = await fetch('/api/careers/applications', {
+        headers: getAdminAuthHeaders()
+      });
       if (res.ok) return await res.json();
     } catch (e) {}
     return [];
@@ -329,14 +342,15 @@ export const api = {
   updateCareerApplicationStatus: async (id: string, status: string) => {
     const res = await fetch('/api/careers/applications', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
       body: JSON.stringify({ id, status })
     });
     return await res.json();
   },
   deleteCareerApplication: async (id: string) => {
     const res = await fetch(`/api/careers/applications?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAdminAuthHeaders()
     });
     return await res.json();
   },
@@ -344,7 +358,9 @@ export const api = {
   // Contact Inquiries (Completely separate from Franchise applications)
   getContactMessages: async () => {
     try {
-      const res = await fetch('/api/contact');
+      const res = await fetch('/api/contact', {
+        headers: getAdminAuthHeaders()
+      });
       if (res.ok) return await res.json();
     } catch (e) {}
     return [];
@@ -360,7 +376,7 @@ export const api = {
   updateContactMessageStatus: async (id: string, status: string) => {
     const res = await fetch('/api/contact', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
       body: JSON.stringify({ id, status })
     });
     return await res.json();
@@ -368,7 +384,8 @@ export const api = {
   deleteContactMessage: async (id: string, clearAll?: boolean) => {
     const query = clearAll ? '?clearAll=true' : `?id=${encodeURIComponent(id)}`;
     const res = await fetch(`/api/contact${query}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAdminAuthHeaders()
     });
     return await res.json();
   },

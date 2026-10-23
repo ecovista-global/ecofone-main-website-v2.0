@@ -63,24 +63,6 @@ export default function Navbar() {
         return;
       }
     } catch {
-      // Fall through to try Sub-Admin login
-    }
-
-    // 2. Try Sub-Admin login via backend
-    try {
-      const result = await api.subAdminLogin(adminPasswordInput);
-      const { token } = result;
-
-      setIsAdminModalOpen(false);
-      setAdminPasswordInput('');
-      setAdminModalError('');
-
-      sessionStorage.setItem('ecofone_token', token);
-      sessionStorage.setItem('ecofone_phone', '+91 99199 65499');
-      sessionStorage.setItem('ecofone_admin_role', 'sub-admin');
-
-      router.push('/admin');
-    } catch {
       setAdminModalError('Invalid administrator credentials.');
     }
   };

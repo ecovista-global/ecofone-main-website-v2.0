@@ -246,7 +246,9 @@ export default function CareersManager() {
   // Export Applications to Excel via server route /api/careers/download
   const handleExportApplications = () => {
     try {
-      window.open('/api/careers/download', '_blank');
+      const token = typeof window !== 'undefined' ? (sessionStorage.getItem('ecofone_token') || localStorage.getItem('ecofone_token') || '') : '';
+      const url = token ? `/api/careers/download?token=${encodeURIComponent(token)}` : '/api/careers/download';
+      window.open(url, '_blank');
     } catch (e) {
       const exportData = applications.map(app => ({
         'Application ID': app.id,
