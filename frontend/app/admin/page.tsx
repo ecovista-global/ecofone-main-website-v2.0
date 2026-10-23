@@ -2,8 +2,6 @@
 // NextJS HMR trigger
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import * as XLSX from 'xlsx';
-import ExcelJS from 'exceljs';
 import { useRouter } from 'next/navigation';
 import BrandsManager from './components/brands-manager';
 import ResearchManager from './components/research-manager';
@@ -1442,6 +1440,7 @@ export default function AdminDashboardPage() {
   // Excel Lead Backup Exporter (Full System - Filters Pending Enquiries with Status Validation Dropdown)
   const handleExcelExport = async () => {
     try {
+      const ExcelJS = (await import('exceljs')).default;
       const workbook = new ExcelJS.Workbook();
       
       // 1. Franchise Apps Sheet

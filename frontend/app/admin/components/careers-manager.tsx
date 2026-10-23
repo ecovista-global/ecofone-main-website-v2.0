@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, Clock, XCircle, Search, Download, ExternalLink, Mail, Phone, MessageSquare, Briefcase, Users, Eye } from 'lucide-react';
 import { api } from '../../../lib/api';
-import * as XLSX from 'xlsx';
 
 interface JobPosition {
   id: string;
@@ -244,7 +243,7 @@ export default function CareersManager() {
   };
 
   // Export Applications to Excel via server route /api/careers/download
-  const handleExportApplications = () => {
+  const handleExportApplications = async () => {
     try {
       const token = typeof window !== 'undefined' ? (sessionStorage.getItem('ecofone_token') || localStorage.getItem('ecofone_token') || '') : '';
       const url = token ? `/api/careers/download?token=${encodeURIComponent(token)}` : '/api/careers/download';
@@ -275,6 +274,7 @@ export default function CareersManager() {
         })
       }));
 
+      const XLSX = await import('xlsx');
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Candidates');

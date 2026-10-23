@@ -46,8 +46,9 @@ export default function BuyCatalogPage() {
     async function loadCatalog() {
       try {
         const res = await api.getCatalog();
-        setCatalog(res);
-        setFilteredCatalog(res);
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        setCatalog(items);
+        setFilteredCatalog(items);
       } catch (err) {
         console.error('Failed to load marketplace catalog:', err);
       }
@@ -120,6 +121,20 @@ export default function BuyCatalogPage() {
     }
   };
 
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const executeRazorpayCheckout = async () => {
     if (!selectedSku) return;
     setIsProcessing(true);
@@ -127,38 +142,70 @@ export default function BuyCatalogPage() {
     try {
       // 1. Call checkout api to secure order and create Razorpay ID
       const orderData = await api.initiateCheckout(selectedSku.skuId);
-      
-      // Save order context locally to verify payment signature later
       const orderId = orderData.orderId;
       const razorpayOrderId = orderData.razorpayOrderId;
+      const keyId = orderData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_mockkeyid12345';
 
-      // 2. Open Razorpay payments verification dialog (simulate webhook checkouts)
-      // Since window.Razorpay may not be present in script environments, we simulate signature verification callback
-      console.log(`[Razorpay Order Created] ID: ${razorpayOrderId}, Amount: ₹${orderData.amount}`);
-      
-      setTimeout(async () => {
-        try {
-          // Bypassing with mock payment validation details
-          const verifyResult = await api.verifyPayment({
-            orderId,
-            razorpayPaymentId: `pay_mock_${Math.random().toString(36).substr(2, 9)}`,
-            razorpaySignature: 'rzp_mock_signature', // triggers test bypass bypass on NestJS side
-          });
+      // 2. Load Razorpay Checkout SDK
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !(window as any).Razorpay) {
+        throw new Error('Razorpay payment gateway failed to load. Please check your internet connection or ad blocker.');
+      }
 
-          if (verifyResult.success) {
-            setOrderConfirm({
+      // 3. Open Razorpay payments verification dialog
+      const options = {
+        key: keyId,
+        amount: Math.round(orderData.amount * 100),
+        currency: 'INR',
+        name: 'EcoFone Re-commerce',
+        description: `${selectedSku.brandName} ${selectedSku.modelName} (${selectedSku.grade})`,
+        order_id: razorpayOrderId,
+        handler: async function (response: any) {
+          try {
+            setIsProcessing(true);
+            const verifyResult = await api.verifyPayment({
               orderId,
-              amount: orderData.amount,
-              razorpayOrderId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
             });
-            setCheckoutStep(3); // success completion
+
+            if (verifyResult.success) {
+              setOrderConfirm({
+                orderId,
+                amount: orderData.amount,
+                razorpayOrderId,
+                paymentId: response.razorpay_payment_id,
+              });
+              setCheckoutStep(3); // success completion
+            } else {
+              setCheckoutError('Payment verification check could not be confirmed.');
+            }
+          } catch (vErr: any) {
+            setCheckoutError(vErr.message || 'Payment signature verification check failed.');
+          } finally {
+            setIsProcessing(false);
           }
-        } catch (vErr: any) {
-          setCheckoutError(vErr.message || 'Payment signature verification check failed.');
-        } finally {
-          setIsProcessing(false);
-        }
-      }, 1500);
+        },
+        prefill: {
+          contact: phone,
+          name: clientName || 'Valued Customer',
+        },
+        theme: {
+          color: '#10B981',
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+          },
+        },
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.on('payment.failed', function (response: any) {
+        setCheckoutError(response.error?.description || 'Payment was declined or failed.');
+        setIsProcessing(false);
+      });
+      paymentObject.open();
 
     } catch (err: any) {
       setCheckoutError(err.message || 'Checkout creation failed.');

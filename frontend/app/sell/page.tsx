@@ -13,15 +13,15 @@ export default function SellPage() {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedVariant, setSelectedVariant] = useState('');
-  
-  // Lists mapped
-  const brands = [
+
+  // Default fallback lists
+  const DEFAULT_BRANDS = [
     { id: 'b1', name: 'Apple' },
     { id: 'b2', name: 'Samsung' },
     { id: 'b3', name: 'OnePlus' }
   ];
 
-  const models: Record<string, DeviceItem[]> = {
+  const DEFAULT_MODELS: Record<string, DeviceItem[]> = {
     'b1': [
       { id: 'm1', name: 'iPhone 13' },
       { id: 'm2', name: 'iPhone 14' }
@@ -34,7 +34,7 @@ export default function SellPage() {
     ]
   };
 
-  const variants: Record<string, DeviceItem[]> = {
+  const DEFAULT_VARIANTS: Record<string, DeviceItem[]> = {
     'm1': [
       { id: 'v1', name: '128GB (Midnight)' },
       { id: 'v2', name: '256GB (Blue)' }
@@ -49,6 +49,56 @@ export default function SellPage() {
       { id: 'v5', name: '256GB (Emerald Green)' }
     ]
   };
+
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>(DEFAULT_BRANDS);
+  const [models, setModels] = useState<Record<string, DeviceItem[]>>(DEFAULT_MODELS);
+  const [variants, setVariants] = useState<Record<string, DeviceItem[]>>(DEFAULT_VARIANTS);
+
+  useEffect(() => {
+    async function loadDynamicCatalog() {
+      try {
+        const res = await api.getCatalog();
+        const items: any[] = Array.isArray(res) ? res : (res?.items || []);
+        if (items && items.length > 0) {
+          const brandMap = new Map<string, string>();
+          const modelMap: Record<string, Map<string, string>> = {};
+          const variantMap: Record<string, DeviceItem[]> = {};
+
+          items.forEach((item) => {
+            const bId = item.brandSlug || item.brandName.toLowerCase();
+            brandMap.set(bId, item.brandName);
+
+            if (!modelMap[bId]) modelMap[bId] = new Map();
+            const mId = item.modelSlug || item.modelName.toLowerCase();
+            modelMap[bId].set(mId, item.modelName);
+
+            if (!variantMap[mId]) variantMap[mId] = [];
+            const vId = item.variantId || item.skuId;
+            const vName = `${item.storage || ''} ${item.ram ? `(${item.ram} RAM)` : ''} ${item.color || ''}`.trim() || 'Standard Variant';
+
+            if (!variantMap[mId].some(v => v.id === vId)) {
+              variantMap[mId].push({ id: vId, name: vName });
+            }
+          });
+
+          const dynBrands = Array.from(brandMap.entries()).map(([id, name]) => ({ id, name }));
+          const dynModels: Record<string, DeviceItem[]> = {};
+          Object.entries(modelMap).forEach(([bId, map]) => {
+            dynModels[bId] = Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+          });
+
+          if (dynBrands.length > 0) {
+            setBrands(dynBrands);
+            setModels(dynModels);
+            setVariants(variantMap);
+          }
+        }
+      } catch (err) {
+        console.warn('Dynamic catalog loading fell back to static devices:', err);
+      }
+    }
+    loadDynamicCatalog();
+  }, []);
 
   // Defects checklist
   const [defects, setDefects] = useState({
