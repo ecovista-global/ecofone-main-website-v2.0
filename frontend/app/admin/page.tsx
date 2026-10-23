@@ -2182,8 +2182,8 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const savedMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || 'admin123';
-    if (subAdminPassword === savedMasterPassword) {
+    const savedMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || '';
+    if (savedMasterPassword && subAdminPassword === savedMasterPassword) {
       setSubAdminError('Password cannot be the same as the Master Admin password.');
       return;
     }
@@ -2234,8 +2234,8 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setRevokePasswordError('');
     setRevokeErrorField(null);
-    const currentMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || 'admin123';
-    if (revokePasswordInput !== currentMasterPassword) {
+    const currentMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || '';
+    if (!currentMasterPassword || revokePasswordInput !== currentMasterPassword) {
       setRevokePasswordError('Incorrect Master Admin password.');
       setRevokeErrorField('master');
       return;
