@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import React from "react";
 import LayoutClientWrapper from "../components/layout-client-wrapper";
-import WriteReviewButton from "../components/write-review-button";
 import CopyrightYear from "../components/copyright-year";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -128,102 +126,107 @@ export default function RootLayout({
       <body className="bg-dots min-h-screen flex flex-col font-sans relative">
         <LayoutClientWrapper
           footer={
-            <footer className="w-full bg-[#071f12] text-slate-300 font-sans border-t border-[#0d3820] pt-14 pb-8">
-              <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 pb-12 border-b border-[#0f3d23]">
-                  {/* Col 1: Brand & Review */}
-                  <div className="flex flex-col space-y-4">
-                    <Link href="/" className="inline-block">
-                      <img src="/logo.jpg" alt="EcoFone Logo" className="h-12 w-auto object-contain rounded" />
+            <footer className="w-full bg-[#071f12] text-slate-300 font-sans border-t border-[#0d3820] pt-14 pb-12">
+              <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-12">
+                {/* Top Row: Brand Pill & Social Icons */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-8">
+                  {/* Brand Pill + Subtitle */}
+                  <div className="flex items-center gap-3.5">
+                    <Link href="/" className="bg-white rounded-xl px-3.5 py-2 inline-flex items-center shadow-sm hover:opacity-95 transition-opacity">
+                      <img src="/logo.jpg" alt="EcoFone Logo" className="h-7 sm:h-8 w-auto object-contain" />
                     </Link>
-                    <p className="text-[13px] text-slate-300 leading-relaxed">
-                      EcoFone is India’s premium franchise network and trade-in platform for high-quality refurbished smartphones. Extending the lifecycle of electronics for a greener tomorrow.
-                    </p>
-                    <div className="pt-2">
-                      <WriteReviewButton />
-                    </div>
+                    <div className="w-[1px] h-6 bg-slate-700/80" />
+                    <span className="text-white text-xs sm:text-[13px] font-black tracking-[0.2em] uppercase">
+                      FRANCHISE NETWORK
+                    </span>
                   </div>
 
-                  {/* Col 2: Quick Links */}
-                  <div className="flex flex-col space-y-3">
-                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
-                      QUICK LINKS
-                    </h4>
-                    <ul className="flex flex-col space-y-2 text-[13px] text-slate-300">
-                      <li><Link href="/" className="hover:text-emerald-400 transition-colors">Home</Link></li>
-                      <li><Link href="/about" className="hover:text-emerald-400 transition-colors">About Us</Link></li>
-                      <li><Link href="/services" className="hover:text-emerald-400 transition-colors">Our Services</Link></li>
-                      <li><Link href="/franchise" className="hover:text-emerald-400 transition-colors">Franchise Program</Link></li>
-                      <li><Link href="/blog" className="hover:text-emerald-400 transition-colors">Articles / Blogs</Link></li>
-                      <li><Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact Us</Link></li>
-                      <li className="pt-1">
-                        <Link href="/verify-certificate/EF-2026-8842" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
-                          <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
-                          <span>Verify Certificate</span>
-                        </Link>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Col 3: Contact Us */}
-                  <div className="flex flex-col space-y-3">
-                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
-                      CONTACT US
-                    </h4>
-                    <div className="flex flex-col space-y-2.5 text-[13px] text-slate-300">
-                      <p><span className="text-slate-400">Email:</span> <a href="mailto:business@ecofone.co.in" className="hover:text-emerald-400 transition-colors">business@ecofone.co.in</a></p>
-                      <p><span className="text-slate-400">Phone:</span> <a href="tel:+919919965499" className="hover:text-emerald-400 transition-colors">+91 99199 65499</a></p>
-                      <p className="leading-relaxed">
-                        <span className="text-slate-400">Lucknow HQ:</span> 505, JB Metro Heights, Transport Nagar, Kanpur Road, Lucknow – 226012
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Col 4: Our Location */}
-                  <div className="flex flex-col space-y-3">
-                    <h4 className="text-[13px] font-bold text-white tracking-wider uppercase">
-                      OUR LOCATION
-                    </h4>
-                    <div className="relative rounded-xl overflow-hidden border border-[#0f3d23] shadow-lg bg-[#05160d] group h-36">
-                      <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3561.2274483733226!2d80.8920155!3d26.7993086!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x399bf88414995555%3A0xb35a9f24300bbba1!2sJB%20Metro%20Heights!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
-                        width="100%" 
-                        height="100%" 
-                        style={{ border: 0 }} 
-                        allowFullScreen={false} 
-                        loading="lazy" 
-                        referrerPolicy="no-referrer-when-downgrade"
-                        className="w-full h-full grayscale-[25%] contrast-110"
-                      />
-                      <a
-                        href="https://maps.google.com/?q=JB+Metro+Heights+Transport+Nagar+Lucknow"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute top-2.5 left-2.5 bg-white/90 hover:bg-white text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-md shadow-md flex items-center gap-1 transition-all"
-                      >
-                        <span>Maps</span>
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </a>
-                    </div>
+                  {/* Circular Social Buttons */}
+                  <div className="flex items-center gap-2.5">
+                    <a
+                      href="https://www.linkedin.com/company/ecovista-private-limited/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 hover:border-emerald-500/30"
+                      aria-label="LinkedIn"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a
+                      href="https://www.instagram.com/ecofone_official"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 hover:border-emerald-500/30"
+                      aria-label="Instagram"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
+                    </a>
+                    <a
+                      href="https://wa.me/919919965499"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 hover:border-emerald-500/30"
+                      aria-label="WhatsApp"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.159.57 4.186 1.564 5.941l-1.637 5.981 6.143-1.612c1.701.928 3.651 1.455 5.73 1.455 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a
+                      href="https://x.com/ecofonel82115"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 hover:border-emerald-500/30"
+                      aria-label="X"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    </a>
+                    <a
+                      href="https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-white/5 hover:border-emerald-500/30"
+                      aria-label="Facebook"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" /></svg>
+                    </a>
                   </div>
                 </div>
 
-                {/* Bottom Bar */}
-                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-slate-400">
-                  <p>© 2026 EcoFone Franchise Network. All rights reserved.</p>
-                  <div className="flex items-center gap-4 text-slate-400">
-                    <a href="https://www.facebook.com/people/EcoFone/61583296272681/?mibextid=wwXIfr&rdid=3ro69EiPXA4Rlxf9&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F187RLSW1y4%2F%3Fmibextid%3DwwXIfr" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="Facebook">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" /></svg>
-                    </a>
-                    <a href="https://www.instagram.com/ecofone_official" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="Instagram">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051C.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
-                    </a>
-                    <a href="https://www.linkedin.com/company/ecovista-private-limited/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="LinkedIn">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                    </a>
-                    <a href="https://x.com/ecofonel82115" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" aria-label="X">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                    </a>
+                {/* Corporate Info Block (Setu Style Left-Aligned) */}
+                <div className="space-y-2 max-w-3xl pt-2">
+                  <p className="text-[13px] sm:text-sm text-slate-400 font-normal">
+                    India’s Trusted Smartphone Re-Commerce & Franchise Network
+                  </p>
+                  <p className="text-sm sm:text-[15px] font-bold text-white tracking-wide uppercase">
+                    ECOVISTA GLOBAL PRIVATE LIMITED
+                  </p>
+                  <p className="text-[13px] text-slate-400 leading-relaxed">
+                    505, JB Metro Heights, Transport Nagar, Kanpur Road, Lucknow, Uttar Pradesh 226012
+                  </p>
+                  <p className="text-[13px] text-slate-400 pt-1">
+                    <a href="mailto:business@ecofone.co.in" className="text-slate-300 hover:text-emerald-400 transition-colors">business@ecofone.co.in</a>
+                    <span className="mx-2 text-slate-600">•</span>
+                    <a href="tel:+919919965499" className="text-slate-300 hover:text-emerald-400 transition-colors">+91 99199 65499</a>
+                  </p>
+                </div>
+
+                {/* Horizontal Navigation Row (Setu Style) */}
+                <div className="pt-10 pb-6">
+                  <nav className="flex flex-wrap items-center gap-6 sm:gap-8 text-[13.5px] sm:text-[14px]">
+                    <Link href="/" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Home</Link>
+                    <Link href="/about" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">About Us</Link>
+                    <Link href="/franchise" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Franchise Program</Link>
+                    <Link href="/careers" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Careers</Link>
+                    <Link href="/blog" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Articles / Blogs</Link>
+                    <Link href="/contact" className="text-slate-300 hover:text-emerald-400 font-medium transition-colors">Contact Us</Link>
+                  </nav>
+                </div>
+
+                {/* Bottom Legal & Copyright Bar */}
+                <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-slate-400">
+                  <p>© 2026 ECOVISTA GLOBAL PRIVATE LIMITED. All rights reserved.</p>
+                  <div className="flex items-center gap-6">
+                    <Link href="/terms-and-conditions" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+                    <Link href="/terms-and-conditions" className="hover:text-emerald-400 transition-colors">Terms of Use</Link>
                   </div>
                 </div>
               </div>

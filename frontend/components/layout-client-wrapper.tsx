@@ -17,7 +17,7 @@ export default function LayoutClientWrapper({
   const isVerify = pathname?.startsWith('/verify-certificate');
   const hideNavAndFooter = isAdmin || isVerify;
   const isBlog = pathname?.startsWith('/blog');
-  const hasHero = pathname === '/' || pathname === '/about' || pathname === '/services' || pathname === '/terms-and-conditions' || pathname === '/faq' || pathname === '/franchise' || pathname === '/careers' || pathname === '/contact' || isBlog;
+  const hasHero = pathname === '/' || pathname === '/about' || pathname === '/terms-and-conditions' || pathname === '/faq' || pathname === '/franchise' || pathname === '/careers' || pathname === '/contact' || isBlog;
 
   const mainPaddingClass = hideNavAndFooter 
     ? "flex-grow" 

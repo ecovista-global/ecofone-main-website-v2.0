@@ -77,7 +77,7 @@ export default function WhatMakesDifferent() {
                   <p className="text-[13px] sm:text-[15px] text-slate-500 leading-relaxed mb-5">
                     {card.desc}
                   </p>
-                  <Link href="/services" className={`inline-flex items-center gap-1.5 text-[13px] sm:text-[15px] font-bold ${card.iconColor} hover:opacity-80 transition-opacity`}>
+                  <Link href="/about" className={`inline-flex items-center gap-1.5 text-[13px] sm:text-[15px] font-bold ${card.iconColor} hover:opacity-80 transition-opacity`}>
                     Learn more
                     <span className="text-lg">→</span>
                   </Link>

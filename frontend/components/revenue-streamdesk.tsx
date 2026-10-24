@@ -67,7 +67,7 @@ const DEFAULT_DATA: ServicesSectionData = {
       tagline: "GREAT DEVICES. SMARTER PRICES.",
       description: "Purchase pre-owned mobile phones at competitive rates. Instantly check parameters to evaluate and acquire stock.",
       linkText: "Know More",
-      linkUrl: "/services#buy",
+      linkUrl: "/franchise",
       theme: "green",
       iconType: "phone"
     },
@@ -78,7 +78,7 @@ const DEFAULT_DATA: ServicesSectionData = {
       tagline: "TURN DEVICES INTO REVENUE.",
       description: "Sell premium, warranty-backed devices. Build quick customer trust with certification seals and replacement assurances.",
       linkText: "Know More",
-      linkUrl: "/services#sell",
+      linkUrl: "/franchise",
       theme: "orange",
       iconType: "rupee"
     },
@@ -89,7 +89,7 @@ const DEFAULT_DATA: ServicesSectionData = {
       tagline: "EVERYDAY NEEDS. RECURRING INCOME.",
       description: "Earn daily from walk-in repair diagnostics, battery replacements, and life-style accessories sales.",
       linkText: "Know More",
-      linkUrl: "/services#repair",
+      linkUrl: "/franchise",
       theme: "green",
       iconType: "gear"
     }
@@ -258,7 +258,7 @@ export default function RevenueStreamdesk() {
                 {/* Bottom Row: Know More link */}
                 <div className="pt-4 flex items-center justify-between z-10 relative mt-auto">
                   <Link
-                    href={card.linkUrl || '/services'}
+                    href={card.linkUrl || '/franchise'}
                     className={`inline-flex items-center gap-1.5 text-sm font-bold transition-opacity hover:opacity-80 ${
                       isOrange ? 'text-[#E06915]' : 'text-[#1E724C]'
                     }`}
