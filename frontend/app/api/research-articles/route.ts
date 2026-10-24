@@ -3,8 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { verifyAdminAuth, extractBearerToken } from '@/lib/auth-guard';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'research_articles.json');
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3001';
+import { readFallbackJson, writeFallbackJson } from '@/lib/json-fallback';
+
+const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4012';
 
 const DEFAULT_ARTICLES = [
   {
@@ -45,33 +46,16 @@ const DEFAULT_ARTICLES = [
   }
 ];
 
-function getLocalArticles(): any[] {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading research_articles.json:', err);
+async function getLocalArticles(): Promise<any[]> {
+  const articles = await readFallbackJson<any[]>('research_articles.json', []);
+  if (Array.isArray(articles) && articles.length > 0) {
+    return articles;
   }
-
-  saveLocalArticles(DEFAULT_ARTICLES);
   return DEFAULT_ARTICLES;
 }
 
-function saveLocalArticles(articles: any[]) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(articles, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving research_articles.json:', err);
-  }
+async function saveLocalArticles(articles: any[]): Promise<void> {
+  await writeFallbackJson('research_articles.json', articles);
 }
 
 export async function GET() {
@@ -96,7 +80,7 @@ export async function GET() {
       // Fallback
     }
 
-    const articles = getLocalArticles();
+    const articles = await getLocalArticles();
     return NextResponse.json(articles);
   } catch (err: any) {
     return NextResponse.json(DEFAULT_ARTICLES);
@@ -133,14 +117,14 @@ export async function POST(req: Request) {
       }
     } catch (_) {}
 
-    const articles = getLocalArticles();
+    const articles = await getLocalArticles();
     const newArticle = savedArticle || {
       ...body,
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
     articles.unshift(newArticle);
-    saveLocalArticles(articles);
+    await saveLocalArticles(articles);
     return NextResponse.json(newArticle, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -183,9 +167,9 @@ export async function DELETE(req: Request) {
       clearTimeout(timeoutId);
     } catch (_) {}
 
-    const articles = getLocalArticles();
+    const articles = await getLocalArticles();
     const filtered = articles.filter(a => a.id !== id);
-    saveLocalArticles(filtered);
+    await saveLocalArticles(filtered);
 
     return NextResponse.json({ success: true, message: 'Article deleted successfully' });
   } catch (err: any) {

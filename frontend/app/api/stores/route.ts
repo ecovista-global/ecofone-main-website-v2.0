@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 import { verifyAdminAuth, extractBearerToken } from '@/lib/auth-guard';
+import { readFallbackJson, writeFallbackJson } from '@/lib/json-fallback';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'stores.json');
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4012';
 
 const INITIAL_STORES = [
   {
@@ -57,32 +55,16 @@ const INITIAL_STORES = [
   }
 ];
 
-function getLocalStores(): any[] {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading stores file:', err);
+async function getLocalStores(): Promise<any[]> {
+  const stores = await readFallbackJson<any[]>('stores.json', []);
+  if (Array.isArray(stores) && stores.length > 0) {
+    return stores;
   }
-  saveLocalStores(INITIAL_STORES);
   return INITIAL_STORES;
 }
 
-function saveLocalStores(stores: any[]) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(stores, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing stores file:', err);
-  }
+async function saveLocalStores(stores: any[]): Promise<void> {
+  await writeFallbackJson('stores.json', stores);
 }
 
 export async function GET(req: Request) {
@@ -112,7 +94,7 @@ export async function GET(req: Request) {
       // Backend unavailable; seamlessly fall back to local JSON store
     }
 
-    const stores = getLocalStores();
+    const stores = await getLocalStores();
     return NextResponse.json(stores);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -154,7 +136,7 @@ export async function POST(req: Request) {
     } catch (_) {}
 
     // Fallback/mirror to local file
-    const stores = getLocalStores();
+    const stores = await getLocalStores();
     const newStore = savedStore || {
       id: body.id || `store-${Date.now()}`,
       name: body.name || 'EcoFone Store',
@@ -173,7 +155,7 @@ export async function POST(req: Request) {
     };
 
     stores.unshift(newStore);
-    saveLocalStores(stores);
+    await saveLocalStores(stores);
 
     return NextResponse.json({ success: true, store: newStore });
   } catch (err: any) {
@@ -211,7 +193,7 @@ export async function PUT(req: Request) {
       clearTimeout(timeoutId);
     } catch (_) {}
 
-    const stores = getLocalStores();
+    const stores = await getLocalStores();
     const index = stores.findIndex(s => s.id === body.id);
     if (index === -1) {
       return NextResponse.json({ success: false, error: 'Store not found' }, { status: 404 });
@@ -224,7 +206,7 @@ export async function PUT(req: Request) {
       updatedAt: new Date().toISOString()
     };
 
-    saveLocalStores(stores);
+    await saveLocalStores(stores);
     return NextResponse.json({ success: true, store: stores[index] });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -268,9 +250,9 @@ export async function DELETE(req: Request) {
       clearTimeout(timeoutId);
     } catch (_) {}
 
-    const stores = getLocalStores();
+    const stores = await getLocalStores();
     const filtered = stores.filter(s => s.id !== id);
-    saveLocalStores(filtered);
+    await saveLocalStores(filtered);
 
     return NextResponse.json({ success: true, message: 'Store deleted successfully' });
   } catch (err: any) {

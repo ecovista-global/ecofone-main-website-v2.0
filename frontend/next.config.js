@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Compendium Invariant: Strict requirement for AWS ECS Graviton ARM64 Container Portability
+  output: 'standalone',
   reactStrictMode: false,
   async rewrites() {
     const backendHost = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'https://nextjs-642200683.kloudbeansite.com';
@@ -35,5 +37,10 @@ const nextConfig = {
     ];
   },
 };
+
+// Fail-fast assertion: Prevent deployment failures if output is ever removed
+if (nextConfig.output !== 'standalone') {
+  throw new Error("Compendium Invariant Error: nextConfig.output MUST remain 'standalone' for AWS container deployment.");
+}
 
 module.exports = nextConfig;

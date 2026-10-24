@@ -1,8 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 
+const TMP_CMS_FILE = '/tmp/ecofone-fallback-data/website_cms.json';
+
 function getCmsFilePath(): string {
   const candidates = [
+    TMP_CMS_FILE,
     path.join(process.cwd(), 'data', 'website_cms.json'),
     path.join(process.cwd(), 'frontend', 'data', 'website_cms.json'),
     path.join(__dirname, '..', 'data', 'website_cms.json'),
@@ -42,8 +45,18 @@ export function saveWebsiteCms(data: any): boolean {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (err) {
-    console.error('Error saving website_cms.json:', err);
-    return false;
+    // Readonly root filesystem fallback (AWS ECS)
+    try {
+      const tmpDir = path.dirname(TMP_CMS_FILE);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      fs.writeFileSync(TMP_CMS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+      return true;
+    } catch (tmpErr) {
+      console.error('Error saving website_cms.json to /tmp:', tmpErr);
+      return false;
+    }
   }
 }
 

@@ -6,31 +6,16 @@ import { checkRateLimit } from '../../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../../lib/email-templates';
 import { verifyAdminAuth } from '../../../../lib/auth-guard';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'careers_applications.json');
+import { readFallbackJson, writeFallbackJson } from '../../../../lib/json-fallback';
+
 const HR_EMAIL = process.env.HR_EMAIL || 'future@ecofone.co.in';
 
-function getApplications() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error reading applications file:', err);
-  }
-  return [];
+async function getApplications(): Promise<any[]> {
+  return await readFallbackJson<any[]>('careers_applications.json', []);
 }
 
-function saveApplications(apps: any[]) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(apps, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing applications file:', err);
-  }
+async function saveApplications(apps: any[]): Promise<void> {
+  await writeFallbackJson('careers_applications.json', apps);
 }
 
 async function dispatchEmailToHr(app: any) {
@@ -171,7 +156,7 @@ export async function GET(req: Request) {
     console.warn('[Careers] Backend DB fetch warning, using local fallback:', err?.message);
   }
 
-  const apps = getApplications();
+  const apps = await getApplications();
   return NextResponse.json(apps);
 }
 
@@ -204,7 +189,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const apps = getApplications();
+    const apps = await getApplications();
     const newApp = {
       id: `app-${Date.now()}`,
       jobId: body.jobId || '',
@@ -245,7 +230,7 @@ export async function POST(req: Request) {
     }
 
     apps.unshift(newApp);
-    saveApplications(apps);
+    await saveApplications(apps);
 
     // Direct background email dispatch to HR (future@ecofone.co.in)
     const emailResult = await dispatchEmailToHr(newApp);
@@ -272,7 +257,7 @@ export async function PATCH(req: Request) {
     if (!body.id) {
       return NextResponse.json({ success: false, error: 'Application ID required' }, { status: 400 });
     }
-    const apps = getApplications();
+    const apps = await getApplications();
     const index = apps.findIndex((a: any) => a.id === body.id);
     if (index === -1) {
       return NextResponse.json({ success: false, error: 'Application not found' }, { status: 404 });
@@ -281,7 +266,7 @@ export async function PATCH(req: Request) {
       ...apps[index],
       ...body
     };
-    saveApplications(apps);
+    await saveApplications(apps);
     return NextResponse.json({ success: true, application: apps[index] });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -300,9 +285,9 @@ export async function DELETE(req: Request) {
     if (!id) {
       return NextResponse.json({ success: false, error: 'Application ID required' }, { status: 400 });
     }
-    let apps = getApplications();
+    let apps = await getApplications();
     apps = apps.filter((a: any) => a.id !== id);
-    saveApplications(apps);
+    await saveApplications(apps);
     return NextResponse.json({ success: true, deletedId: id });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

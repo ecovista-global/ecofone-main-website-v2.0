@@ -1,0 +1,330 @@
+name: EcoFone AWS Deploy (ECR + ECS Zero-Downtime)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'infra/ecs/**'
+      - '.github/workflows/aws-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      skip_migrations:
+        description: 'Skip prisma migrate deploy (use only if no schema change)'
+        type: boolean
+        default: false
+
+# Only one production deploy at a time; never cancel a deploy that is mid-flight.
+concurrency:
+  group: ecofone-production-deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # required for GitHub OIDC -> AWS
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. VERIFY — fail fast before spending build minutes
+  # ---------------------------------------------------------------------------
+  verify:
+    name: Verify (typecheck, prisma, audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.0'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Backend typecheck, prisma validate, audit
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          DIRECT_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+        run: |
+          npm ci
+          npx prisma validate
+          npx tsc --noEmit
+
+      - name: Frontend typecheck
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npx tsc --noEmit
+
+  # ---------------------------------------------------------------------------
+  # 2. BUILD & PUSH — ARM64 images tagged with the commit SHA
+  # ---------------------------------------------------------------------------
+  build-push:
+    name: Build & Push (${{ matrix.target.name }})
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: true
+      matrix:
+        target:
+          - { name: backend,          context: ./backend,  repo: ecofone-backend,          stage: runner }
+          - { name: backend-migrator, context: ./backend,  repo: ecofone-backend-migrator, stage: migrator }
+          - { name: frontend,         context: ./frontend, repo: ecofone-frontend,         stage: runner }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up QEMU (cross-build ARM64 on x86 runner)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.target.name }} (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.target.context }}
+          target: ${{ matrix.target.stage }}
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: ${{ env.ECR_REGISTRY }}/${{ matrix.target.repo }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=${{ matrix.target.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target.name }}
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+
+  # ---------------------------------------------------------------------------
+  # 3. MIGRATE — exactly ONE ECS task runs `prisma migrate deploy`
+  # ---------------------------------------------------------------------------
+  migrate:
+    name: Database Migration (single RunTask)
+    needs: build-push
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip_migrations) }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Render migration task definition
+        id: render-migrate
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs/migrate-taskdef.json
+          container-name: migrate
+          image: ${{ env.ECR_REGISTRY }}/ecofone-backend-migrator:${{ env.IMAGE_TAG }}
+
+      - name: Register migration task definition
+        id: register-migrate
+        run: |
+          ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://${{ steps.render-migrate.outputs.task-definition }}" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Run migration task and wait for completion
+        run: |
+          set -euo pipefail
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --launch-type FARGATE \
+            --task-definition "${{ steps.register-migrate.outputs.arn }}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ vars.MIGRATE_SUBNETS }}],securityGroups=[${{ vars.MIGRATE_SECURITY_GROUP }}],assignPublicIp=DISABLED}" \
+            --query 'tasks[0].taskArn' --output text)
+
+          echo "Migration task started: $TASK_ARN"
+          aws ecs wait tasks-stopped --cluster "${{ vars.ECS_CLUSTER }}" --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "${{ vars.ECS_CLUSTER }}" --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+
+          echo "Migration container exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::prisma migrate deploy failed (exit $EXIT_CODE). Check CloudWatch log group /ecs/ecofone-migrate."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 4. DEPLOY BACKEND — rolling update with circuit breaker
+  # ---------------------------------------------------------------------------
+  deploy-backend:
+    name: Deploy Backend (NestJS)
+    needs: [build-push, migrate]
+    if: ${{ always() && needs.build-push.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      previous_taskdef: ${{ steps.capture.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Capture currently running task definition (for rollback)
+        id: capture
+        run: |
+          PREV=$(aws ecs describe-services \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE_BACKEND }}" \
+            --query 'services[0].taskDefinition' --output text)
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Previous backend task definition: $PREV"
+
+      - name: Render backend task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs/backend-taskdef.json
+          container-name: backend
+          image: ${{ env.ECR_REGISTRY }}/ecofone-backend:${{ env.IMAGE_TAG }}
+
+      - name: Deploy to ECS and wait for service stability
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE_BACKEND }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 15
+
+  # ---------------------------------------------------------------------------
+  # 5. DEPLOY FRONTEND — after the API is healthy
+  # ---------------------------------------------------------------------------
+  deploy-frontend:
+    name: Deploy Frontend (Next.js)
+    needs: [build-push, deploy-backend]
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      previous_taskdef: ${{ steps.capture.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Capture currently running task definition (for rollback)
+        id: capture
+        run: |
+          PREV=$(aws ecs describe-services \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE_FRONTEND }}" \
+            --query 'services[0].taskDefinition' --output text)
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Previous frontend task definition: $PREV"
+
+      - name: Render frontend task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs/frontend-taskdef.json
+          container-name: frontend
+          image: ${{ env.ECR_REGISTRY }}/ecofone-frontend:${{ env.IMAGE_TAG }}
+
+      - name: Deploy to ECS and wait for service stability
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE_FRONTEND }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 15
+
+  # ---------------------------------------------------------------------------
+  # 6. SMOKE TEST — verify the live site through Cloudflare -> ALB -> ECS
+  # ---------------------------------------------------------------------------
+  smoke-test:
+    name: Post-Deploy Smoke Test
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Liveness, deep readiness and homepage checks
+        env:
+          BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+        run: |
+          set -euo pipefail
+
+          check() {
+            local url="$1" expect="$2" attempts=10
+            for i in $(seq 1 $attempts); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$url" || echo "000")
+              echo "[$i/$attempts] $url -> $code"
+              if [ "$code" = "$expect" ]; then return 0; fi
+              sleep 6
+            done
+            echo "::error::Smoke test failed for $url (expected $expect)"
+            return 1
+          }
+
+          check "$BASE_URL/api/v1/health/live" 200
+          check "$BASE_URL/api/v1/health"      200
+          check "$BASE_URL/"                   200
+          check "$BASE_URL/buy"                200
+          check "$BASE_URL/robots.txt"         200
+
+  # ---------------------------------------------------------------------------
+  # 7. ROLLBACK — restore previous task definitions if smoke tests fail
+  # ---------------------------------------------------------------------------
+  rollback:
+    name: Automatic Rollback
+    needs: [deploy-backend, deploy-frontend, smoke-test]
+    if: ${{ always() && needs.smoke-test.result == 'failure' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Roll back backend and frontend to previous task definitions
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE_BACKEND }}" \
+            --task-definition "${{ needs.deploy-backend.outputs.previous_taskdef }}" >/dev/null
+
+          aws ecs update-service \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --service "${{ vars.ECS_SERVICE_FRONTEND }}" \
+            --task-definition "${{ needs.deploy-frontend.outputs.previous_taskdef }}" >/dev/null
+
+          aws ecs wait services-stable \
+            --cluster "${{ vars.ECS_CLUSTER }}" \
+            --services "${{ vars.ECS_SERVICE_BACKEND }}" "${{ vars.ECS_SERVICE_FRONTEND }}"
+
+          echo "::warning::Rolled back to previous task definitions."

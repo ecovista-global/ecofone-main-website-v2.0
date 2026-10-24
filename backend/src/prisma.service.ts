@@ -21,16 +21,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit() {
-    try {
-      await this.$connect();
-      this.logger.log('Successfully connected to the PostgreSQL database via Prisma.');
-    } catch (err) {
-      this.logger.warn('Failed to connect to the PostgreSQL database. Please ensure DATABASE_URL in backend/.env is correct and database is active.');
-      this.logger.warn(err.message);
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        await this.$connect();
+        this.logger.log('Successfully connected to the PostgreSQL database via Prisma.');
+        return;
+      } catch (err: any) {
+        attempt++;
+        this.logger.warn(`Database connection attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+        if (attempt < maxRetries) {
+          await new Promise((res) => setTimeout(res, 1000 * attempt));
+        } else {
+          this.logger.error('CRITICAL: Exhausted database connection retries. Service running with fallback readiness.');
+        }
+      }
     }
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
+    this.logger.log('Prisma disconnected cleanly on application shutdown.');
   }
 }

@@ -1,0 +1,49 @@
+{
+  "family": "ecofone-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": { "cpuArchitecture": "ARM64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecofone-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecofone-backend-task-role",
+  "volumes": [],
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "REPLACED_BY_WORKFLOW",
+      "essential": true,
+      "stopTimeout": 30,
+      "readonlyRootFilesystem": true,
+      "portMappings": [{ "containerPort": 4012, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "4012" },
+        { "name": "CORS_ORIGINS", "value": "https://ecofone.co.in,https://www.ecofone.co.in" },
+        { "name": "DB_POOL_SIZE", "value": "10" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/DATABASE_URL" },
+        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/REDIS_URL" },
+        { "name": "RAZORPAY_WEBHOOK_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/RAZORPAY_WEBHOOK_SECRET" },
+        { "name": "JWT_SECRET", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/JWT_SECRET" },
+        { "name": "ZOHO_SMTP_PASS", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/ZOHO_SMTP_PASS" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://127.0.0.1:4012/api/v1/health/live || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 25
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ecofone-backend",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "backend"
+        }
+      }
+    }
+  ]
+}

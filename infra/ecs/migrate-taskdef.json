@@ -1,0 +1,30 @@
+{
+  "family": "ecofone-migrate",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "runtimePlatform": { "cpuArchitecture": "ARM64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecofone-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecofone-migrate-task-role",
+  "containerDefinitions": [
+    {
+      "name": "migrate",
+      "image": "REPLACED_BY_WORKFLOW",
+      "essential": true,
+      "environment": [{ "name": "NODE_ENV", "value": "production" }],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/DIRECT_URL" },
+        { "name": "DIRECT_URL", "valueFrom": "arn:aws:ssm:ap-south-1:<ACCOUNT_ID>:parameter/ecofone/prod/DIRECT_URL" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ecofone-migrate",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "migrate"
+        }
+      }
+    }
+  ]
+}

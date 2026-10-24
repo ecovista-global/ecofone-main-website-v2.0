@@ -202,19 +202,12 @@ export class AuthService {
   }
 
   async masterAdminLogin(password: string): Promise<{ token: string }> {
-    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD');
-    if (!masterEnvPassword) {
-      throw new Error('MASTER_ADMIN_PASSWORD environment variable is not configured.');
-    }
-
     // Protect against Long-Password DoS attacks
     if (!password || Buffer.byteLength(password, 'utf8') > 128) {
       throw new UnauthorizedException('Invalid master admin credentials.');
     }
 
-    let isValid = false;
-
-    // 1. Strictly query and check the live database password first (with auto-reconnect retry for cold starts)
+    // 1. Strictly query and check the live database password (with auto-reconnect retry for cold starts)
     let masterRecord: any = null;
     let attempts = 0;
     while (attempts < 2 && !masterRecord) {
@@ -234,24 +227,27 @@ export class AuthService {
       }
     }
 
-    // 2. If a database record exists, strictly authenticate against the database password hash
-    if (masterRecord && masterRecord.password) {
-      if (masterRecord.password.startsWith('$2b$') || masterRecord.password.startsWith('$2a$')) {
-        isValid = await bcrypt.compare(password, masterRecord.password);
-      } else {
-        isValid = password === masterRecord.password;
-      }
+    if (!masterRecord || !masterRecord.password) {
+      throw new UnauthorizedException('Master admin record not initialized in database.');
+    }
+
+    // 2. Strictly authenticate against the database password hash
+    let isValid = false;
+    if (masterRecord.password.startsWith('$2b$') || masterRecord.password.startsWith('$2a$')) {
+      isValid = await bcrypt.compare(password, masterRecord.password);
     } else {
-      // 3. Only if no admin record exists in DB at all, fall back to environment variable
-      isValid = password === masterEnvPassword;
+      // Timing-safe comparison if legacy plaintext
+      const bufA = Buffer.from(password);
+      const bufB = Buffer.from(masterRecord.password);
+      isValid = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
     }
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid master admin password.');
+      throw new UnauthorizedException('Invalid master admin credentials.');
     }
 
     const payload = {
-      id: 'master_admin',
+      id: masterRecord.id || 'master_admin',
       email: 'business@ecofone.co.in',
       phone: '+919919965499',
       role: 'ADMIN',
@@ -266,28 +262,25 @@ export class AuthService {
   }
 
   async changeMasterAdminPassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    if (!newPassword || newPassword.length < 6) {
-      throw new BadRequestException('New password must be at least 6 characters long.');
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('New password must be at least 8 characters long.');
     }
-
-    const masterEnvPassword = this.configService.get<string>('MASTER_ADMIN_PASSWORD');
-    if (!masterEnvPassword) {
-      throw new Error('MASTER_ADMIN_PASSWORD environment variable is not configured.');
-    }
-    let isCurrentValid = false;
 
     const masterRecord = await this.prisma.subAdmin.findUnique({
       where: { username: 'admin' },
     });
 
-    if (masterRecord && masterRecord.password) {
-      if (masterRecord.password.startsWith('$2b$') || masterRecord.password.startsWith('$2a$')) {
-        isCurrentValid = await bcrypt.compare(currentPassword, masterRecord.password);
-      } else {
-        isCurrentValid = currentPassword === masterRecord.password;
-      }
+    if (!masterRecord || !masterRecord.password) {
+      throw new UnauthorizedException('Master admin record not found in database.');
+    }
+
+    let isCurrentValid = false;
+    if (masterRecord.password.startsWith('$2b$') || masterRecord.password.startsWith('$2a$')) {
+      isCurrentValid = await bcrypt.compare(currentPassword, masterRecord.password);
     } else {
-      isCurrentValid = currentPassword === masterEnvPassword;
+      const bufA = Buffer.from(currentPassword);
+      const bufB = Buffer.from(masterRecord.password);
+      isCurrentValid = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
     }
 
     if (!isCurrentValid) {

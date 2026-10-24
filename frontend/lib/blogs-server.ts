@@ -3,18 +3,21 @@ import path from 'path';
 import { BLOG_POSTS, BlogPost } from '../data/blogs';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'blogs.json');
+const TMP_DATA_FILE = '/tmp/ecofone-fallback-data/blogs.json';
 
 export function getStoredBlogs(): BlogPost[] {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+  for (const candidate of [TMP_DATA_FILE, DATA_FILE]) {
+    try {
+      if (fs.existsSync(candidate)) {
+        const data = fs.readFileSync(candidate, 'utf-8');
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
+    } catch (err) {
+      // Continue to next candidate
     }
-  } catch (err) {
-    console.error('Error reading blogs.json:', err);
   }
 
   // Fallback to initial seed posts from blogs.ts and persist them
@@ -36,7 +39,16 @@ export function saveStoredBlogs(blogs: BlogPost[]) {
     }
     fs.writeFileSync(DATA_FILE, JSON.stringify(blogs, null, 2), 'utf-8');
   } catch (err) {
-    console.error('Error saving blogs.json:', err);
+    // Readonly root filesystem fallback (AWS ECS)
+    try {
+      const tmpDir = path.dirname(TMP_DATA_FILE);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      fs.writeFileSync(TMP_DATA_FILE, JSON.stringify(blogs, null, 2), 'utf-8');
+    } catch (tmpErr) {
+      console.error('Error saving blogs.json to /tmp:', tmpErr);
+    }
   }
 }
 

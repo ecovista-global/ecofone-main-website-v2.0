@@ -6,6 +6,12 @@ import { PrismaService } from '../prisma.service';
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get('live')
+  live(@Res() res: Response) {
+    // Instant 200 OK for AWS ALB liveness / ECS container ping
+    return res.status(HttpStatus.OK).json({ status: 'live' });
+  }
+
   @Get()
   async check(@Res() res: Response) {
     const startTime = Date.now();

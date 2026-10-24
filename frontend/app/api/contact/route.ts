@@ -6,30 +6,14 @@ import { checkRateLimit } from '../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../lib/email-templates';
 import { verifyAdminAuth } from '../../../lib/auth-guard';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'contact_messages.json');
+import { readFallbackJson, writeFallbackJson } from '../../../lib/json-fallback';
 
-function getMessages() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error reading contact messages file:', err);
-  }
-  return [];
+async function getMessages(): Promise<any[]> {
+  return await readFallbackJson<any[]>('contact_messages.json', []);
 }
 
-function saveMessages(messages: any[]) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(messages, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing contact messages file:', err);
-  }
+async function saveMessages(messages: any[]): Promise<void> {
+  await writeFallbackJson('contact_messages.json', messages);
 }
 
 export async function GET(req: Request) {
@@ -56,7 +40,7 @@ export async function GET(req: Request) {
     console.warn('[Contact] Backend DB fetch warning, using local fallback:', err?.message);
   }
 
-  const messages = getMessages();
+  const messages = await getMessages();
   return NextResponse.json(messages);
 }
 
@@ -100,7 +84,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Also save to local storage as safety backup
-    const messages = getMessages();
+    const messages = await getMessages();
     const newMessage = {
       id: `contact-${Date.now()}`,
       applicantName: contactName,
@@ -113,7 +97,7 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString()
     };
     messages.unshift(newMessage);
-    saveMessages(messages);
+    await saveMessages(messages);
 
     // 2. Dispatch Zoho SMTP email (from business@ecofone.co.in)
     const smtpHost = process.env.BUSINESS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.zoho.in';
@@ -218,13 +202,13 @@ export async function PATCH(req: Request) {
     }
 
     const { id, status } = await req.json();
-    const messages = getMessages();
+    const messages = await getMessages();
     const index = messages.findIndex((m: any) => m.id === id);
     if (index === -1) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     }
     messages[index].status = status;
-    saveMessages(messages);
+    await saveMessages(messages);
     return NextResponse.json({ success: true, item: messages[index] });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -243,7 +227,7 @@ export async function DELETE(req: Request) {
     const clearAll = url.searchParams.get('clearAll');
 
     if (clearAll === 'true') {
-      saveMessages([]);
+      await saveMessages([]);
       return NextResponse.json({ success: true, count: 0 });
     }
 
@@ -251,9 +235,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const messages = getMessages();
+    const messages = await getMessages();
     const filtered = messages.filter((m: any) => m.id !== id);
-    saveMessages(filtered);
+    await saveMessages(filtered);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
