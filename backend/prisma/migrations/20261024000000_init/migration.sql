@@ -328,6 +328,19 @@ CREATE TABLE "ResearchArticle" (
 );
 
 -- CreateTable
+CREATE TABLE "gallery_items" (
+    "id" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'image',
+    "media_url" TEXT NOT NULL,
+    "caption" TEXT,
+    "display_order" INTEGER NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "gallery_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ContactMessage" (
     "id" TEXT NOT NULL,
     "applicantName" TEXT NOT NULL,
