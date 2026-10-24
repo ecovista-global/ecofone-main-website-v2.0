@@ -2,8 +2,6 @@
 // NextJS HMR trigger
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import * as XLSX from 'xlsx';
-import ExcelJS from 'exceljs';
 import { useRouter } from 'next/navigation';
 import BrandsManager from './components/brands-manager';
 import ResearchManager from './components/research-manager';
@@ -287,9 +285,10 @@ export default function AdminDashboardPage() {
   const [adminPhoneDisplay, setAdminPhoneDisplay] = useState('+91 99199 65499');
   const [adminEmailDisplay, setAdminEmailDisplay] = useState('business@ecofone.co.in');
 
-  // Active Tab & Sidebar mobile states
+    // Active Tab & Sidebar mobile states
   const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'gallery' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers'>('franchise');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [blogsCount, setBlogsCount] = useState<number>(0);
 
   // Revenue Streamdesk CMS state
   const [servicesData, setServicesData] = useState<any>({
@@ -1036,6 +1035,16 @@ export default function AdminDashboardPage() {
         console.warn('Could not load certificates from API:', e);
       }
 
+      // Fetch blogs registry count
+      try {
+        const blogsData = await api.getBlogs();
+        if (blogsData && Array.isArray(blogsData.blogs)) {
+          setBlogsCount(blogsData.blogs.length);
+        }
+      } catch (e) {
+        console.warn('Could not load blogs from API:', e);
+      }
+
       setApplications(franchises);
       setContactQueries(contacts);
       setStores(storesData);
@@ -1392,6 +1401,7 @@ export default function AdminDashboardPage() {
   // Excel Lead Backup Exporter (Full System - Filters Pending Enquiries with Status Validation Dropdown)
   const handleExcelExport = async () => {
     try {
+      const ExcelJS = (await import('exceljs')).default;
       const workbook = new ExcelJS.Workbook();
       
       // 1. Franchise Apps Sheet
@@ -2059,6 +2069,7 @@ export default function AdminDashboardPage() {
     setAdminLoginError('');
 
     const inputPassword = adminPasswordInput.trim();
+    const inputUsername = adminUsernameInput.trim();
     if (!inputPassword) return;
 
     // 1. Try master admin login directly against backend API (checks database + env)
@@ -2081,7 +2092,7 @@ export default function AdminDashboardPage() {
     } catch (masterErr: any) {
       // 2. If master login fails, try sub-admin login via backend database
       try {
-        const result = await api.subAdminLogin(inputPassword);
+        const result = await api.subAdminLogin(inputPassword, inputUsername);
         const { token, user } = result;
 
         sessionStorage.setItem('ecofone_token', token);
@@ -2092,21 +2103,44 @@ export default function AdminDashboardPage() {
         setAdminRole('sub-admin');
         setAllowedPermissions(permissions);
 
-        // Navigate to first permitted tab
         const firstTab = permissions.find((p) => p !== 'security') || 'franchise';
         setActiveTab(firstTab as any);
 
         setIsAdmin(true);
         setAdminPasswordInput('');
+        setAdminUsernameInput('');
         setAdminLoginError('');
         loadDashboardData(false);
         return;
-      } catch (subErr: any) {
-        if (masterErr.message?.includes('connection') || masterErr.message?.includes('fetch') || subErr.message?.includes('connection')) {
-          setAdminLoginError('Server waking up, please click Unlock again in a few seconds.');
-        } else {
-          setAdminLoginError('Incorrect password. Please verify your credentials.');
-        }
+      } catch (err: any) {
+        setAdminLoginError(err.message || 'Invalid sub-admin credentials.');
+        return;
+      }
+    }
+
+    // 1. Try master admin login directly against backend API (checks database + env)
+    try {
+      const result = await api.masterAdminLogin(inputPassword);
+      const realToken = result.token;
+
+      sessionStorage.setItem('ecofone_token', realToken);
+      sessionStorage.setItem('ecofone_phone', '+91 99199 65499');
+      sessionStorage.setItem('ecofone_admin_role', 'master');
+      localStorage.setItem('ecofone_admin_password', inputPassword);
+
+      setAdminRole('master');
+      setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers', 'blogs']);
+      setIsAdmin(true);
+      setAdminPasswordInput('');
+      setAdminUsernameInput('');
+      setAdminLoginError('');
+      loadDashboardData(false);
+      return;
+    } catch (masterErr: any) {
+      if (masterErr.message?.includes('connection') || masterErr.message?.includes('fetch')) {
+        setAdminLoginError('Server waking up, please click Unlock again in a few seconds.');
+      } else {
+        setAdminLoginError('Incorrect password. If logging in as sub-admin, please enter your username.');
       }
     }
   };
@@ -2126,8 +2160,8 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const savedMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || 'admin123';
-    if (subAdminPassword === savedMasterPassword) {
+    const savedMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || '';
+    if (savedMasterPassword && subAdminPassword === savedMasterPassword) {
       setSubAdminError('Password cannot be the same as the Master Admin password.');
       return;
     }
@@ -2178,8 +2212,8 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setRevokePasswordError('');
     setRevokeErrorField(null);
-    const currentMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || 'admin123';
-    if (revokePasswordInput !== currentMasterPassword) {
+    const currentMasterPassword = (typeof window !== 'undefined' && localStorage.getItem('ecofone_admin_password')) || '';
+    if (!currentMasterPassword || revokePasswordInput !== currentMasterPassword) {
       setRevokePasswordError('Incorrect Master Admin password.');
       setRevokeErrorField('master');
       return;
@@ -2332,9 +2366,9 @@ export default function AdminDashboardPage() {
   const getStatusStyle = (status: string) => {
     const s = getCleanStatusLabel(status);
     if (s === 'CLOSED') {
-      return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25';
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
     }
-    return 'bg-amber-500/10 text-amber-400 border border-amber-500/25';
+    return 'bg-amber-50 text-amber-700 border border-amber-200';
   };
 
   // Helper to format clean phone for WhatsApp
@@ -2370,10 +2404,10 @@ export default function AdminDashboardPage() {
   // Guard view to prevent flashing while loading credentials
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-[#090D16] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <span className="text-xs text-slate-400 font-bold animate-pulse tracking-wider">Verifying Console Access...</span>
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-[#059669] rounded-full animate-spin" />
+          <span className="text-xs text-slate-500 font-bold animate-pulse tracking-wider">Verifying Console Access...</span>
         </div>
       </div>
     );
@@ -2382,26 +2416,42 @@ export default function AdminDashboardPage() {
   // Admin Master Password Lock Screen
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-[#090D16] flex items-center justify-center px-4 relative overflow-hidden font-sans">
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center px-4 relative overflow-hidden font-sans">
         {/* Subtle grid backdrop */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370c_1px,transparent_1px),linear-gradient(to_bottom,#1f29370c_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f00c_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f00c_1px,transparent_1px)] bg-[size:4rem_4rem]" />
         
         {/* Glowing backdrop elements */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full filter blur-[80px]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-[80px]" />
         
-        <div className="w-full max-w-md bg-[#111827]/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-8 shadow-2xl relative z-10 space-y-6">
+        <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xl relative z-10 space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#ecfdf5] border border-[#a7f3d0] mb-2 text-[#059669]">
               <span className="text-xl">🔒</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">EcoFone Console</h1>
-            <p className="text-xs text-slate-400">Enter your password to authorize this browser session.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">EcoFone Console</h1>
+            <p className="text-xs text-slate-500">Enter your password to authorize this administrative session.</p>
           </div>
 
           <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-slate-400 font-semibold text-[10px] uppercase tracking-wider">
-                Administrator Password
+              <label className="block text-slate-500 font-semibold text-[10px] uppercase tracking-wider">
+                Username <span className="text-slate-400 font-normal lowercase">(optional for Master Admin)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter username (for sub-admins)"
+                value={adminUsernameInput}
+                onChange={(e) => {
+                  setAdminUsernameInput(e.target.value);
+                  setAdminLoginError('');
+                }}
+                className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-slate-500 font-semibold text-[10px] uppercase tracking-wider">
+                Password
               </label>
               <div className="relative">
                 <input
@@ -2413,12 +2463,12 @@ export default function AdminDashboardPage() {
                     setAdminPasswordInput(e.target.value);
                     setAdminLoginError('');
                   }}
-                  className="w-full bg-[#0a2d1a]/5 border border-slate-800 focus:border-emerald-500/50 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl pl-4 pr-11 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowAdminPassword(!showAdminPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors p-1 flex items-center justify-center focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1 flex items-center justify-center focus:outline-none"
                   title={showAdminPassword ? "Hide password" : "Show password"}
                 >
                   {showAdminPassword ? (
@@ -2436,15 +2486,15 @@ export default function AdminDashboardPage() {
             </div>
 
             {adminLoginError && (
-              <div className="bg-rose-500/15 border border-rose-500/40 text-rose-400 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium shadow-sm">
-                <span className="text-rose-400 text-sm shrink-0">⚠️</span>
-                <span className="text-rose-300 font-semibold">{adminLoginError}</span>
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium shadow-sm">
+                <span className="text-rose-500 text-sm shrink-0">⚠️</span>
+                <span className="font-semibold">{adminLoginError}</span>
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-[#0a2d1a] hover:bg-[#0c3d23] text-white border border-emerald-500/10 font-bold text-xs py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 uppercase tracking-wider"
+              className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 uppercase tracking-wider"
             >
               <span>Unlock Admin Panel</span>
               <span>➔</span>
@@ -2454,7 +2504,7 @@ export default function AdminDashboardPage() {
           <div className="pt-2 text-center">
             <button
               onClick={() => router.push('/')}
-              className="text-[10px] text-slate-500 hover:text-slate-400 font-semibold uppercase tracking-wider transition-colors"
+              className="text-[10px] text-slate-400 hover:text-slate-600 font-semibold uppercase tracking-wider transition-colors"
             >
               ← Back to Storefront
             </button>
@@ -2464,32 +2514,59 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const TAB_TITLES: Record<string, string> = {
+    dashboard: 'Dashboard',
+    heroCms: 'Hero & Homepage',
+    research: 'Research & Press',
+    stores: 'Store Locator (Outlets)',
+    partnerStories: 'Partner Video Stories',
+    testimonials: 'Testimonials & Reviews',
+    faqs: 'FAQs Manager',
+    blogs: 'TechByte Blogs',
+    franchise: 'Franchise Applications',
+    contact: 'Contact Inquiries',
+    certificates: 'Verification Records',
+    team: 'Team Members',
+    siteSettings: 'Site Settings & Footer',
+    logs: 'System Export Logs',
+    security: 'Security & Login Activity',
+    reviews: 'Customer Reviews',
+    services: 'Revenue Desk CMS',
+    brands: 'Top Brands CMS',
+    careers: 'Careers & Hiring CMS'
+  };
+
   return (
-    <div className="flex h-screen bg-[#090D16] text-white overflow-hidden font-sans relative">
+    <div className="flex h-screen bg-[#f8fafc] text-slate-800 overflow-hidden font-sans relative">
       
       {/* Mobile Sidebar Overlay Backdrop */}
       {isSidebarOpen && (
         <div 
           onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden animate-fade-in"
         />
       )}
 
-      {/* 1. LEFT SIDEBAR NAVIGATION */}
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-[#111827] border-r border-slate-800 flex flex-col justify-between z-50 shrink-0 transform transition-transform duration-300 lg:transform-none lg:relative lg:flex ${
+      {/* 1. LEFT SIDEBAR NAVIGATION (Setu Design System - 260px Fixed White Surface) */}
+      <aside className={`fixed inset-y-0 left-0 w-[260px] bg-white border-r border-slate-200/80 flex flex-col justify-between z-50 shrink-0 transform transition-transform duration-300 lg:transform-none lg:relative lg:flex ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex flex-col pt-6 overflow-y-auto min-h-0 flex-1">
+        <div className="flex flex-col overflow-y-auto min-h-0 flex-1">
           
-          {/* Logo Header */}
-          <div className="px-6 pb-6 border-b border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="EcoFone Logo" className="h-10 w-auto object-contain bg-transparent" />
+          {/* Top Brand Header */}
+          <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#059669] flex items-center justify-center text-white font-black text-xs shadow-xs">
+                EF
+              </div>
               <div>
-                <h2 className="font-extrabold text-sm text-white tracking-tight leading-none">EcoFone</h2>
-                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest block mt-1">ADMIN CONSOLE</span>
+                <h2 className="font-extrabold text-sm text-slate-900 tracking-tight leading-none">EcoFone</h2>
+                <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Admin Console</span>
               </div>
             </div>
+            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-0.5 rounded">
+              ADMIN PANEL
+            </span>
           </div>
 
           {/* Nav List */}
@@ -2640,71 +2717,173 @@ export default function AdminDashboardPage() {
             )}
             {allowedPermissions.includes('careers') && (
               <button
-                onClick={() => { setActiveTab('careers'); setIsSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
-                  activeTab === 'careers'
-                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
-                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${
+                  activeTab === 'dashboard'
+                    ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent font-medium'
                 }`}
               >
-                <span className="text-sm">💼</span>
-                <span>Careers &amp; Hiring CMS</span>
+                <LayoutDashboard className={`w-4 h-4 ${activeTab === 'dashboard' ? 'text-[#059669]' : 'text-slate-400'}`} />
+                <span>Dashboard</span>
               </button>
-            )}
-            {allowedPermissions.includes('security') && (
+            </div>
+
+            {/* GROUP 2: CORE WEBSITE PAGES (CMS) */}
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 py-1">
+                CORE WEBSITE PAGES (CMS)
+              </div>
+              {[
+                { id: 'heroCms', label: 'Hero & Homepage', icon: Home },
+                { id: 'research', label: 'Research & Press', icon: TrendingUp },
+                { id: 'stores', label: 'Store Locator (Outlets)', icon: Store },
+                { id: 'partnerStories', label: 'Partner Video Stories', icon: Video },
+                { id: 'testimonials', label: 'Testimonials & Reviews', icon: MessageSquare },
+                { id: 'faqs', label: 'FAQs Manager', icon: HelpCircle },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${
+                      isActive
+                        ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent font-medium'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#059669]' : 'text-slate-400'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* GROUP 3: BLOGS & EDITORIAL */}
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 py-1">
+                BLOGS & EDITORIAL
+              </div>
               <button
-                onClick={() => { setActiveTab('security'); setIsSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
-                  activeTab === 'security'
-                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
-                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                onClick={() => { setActiveTab('blogs'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all ${
+                  activeTab === 'blogs'
+                    ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent font-medium'
                 }`}
               >
-                <span className="text-sm">🔒</span>
-                <span>Security Settings</span>
+                <div className="flex items-center gap-2.5">
+                  <FileText className={`w-4 h-4 ${activeTab === 'blogs' ? 'text-[#059669]' : 'text-slate-400'}`} />
+                  <span>TechByte Blogs</span>
+                </div>
+                {blogsCount > 0 && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeTab === 'blogs' ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {blogsCount}
+                  </span>
+                )}
               </button>
-            )}
+            </div>
+
+            {/* GROUP 4: SALES, LEADS & OPERATIONS */}
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 py-1">
+                SALES, LEADS & OPERATIONS
+              </div>
+              {[
+                { id: 'franchise', label: 'Franchise Apps', icon: Users, badge: applications.length },
+                { id: 'contact', label: 'Contact Inquiries', icon: PhoneCall, badge: contactQueries.length },
+                { id: 'certificates', label: 'Verification Records', icon: ShieldCheck, badge: certificates.length },
+                { id: 'team', label: 'Team Members', icon: Award, badge: teamMembers.length },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all ${
+                      isActive
+                        ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent font-medium'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#059669]' : 'text-slate-400'}`} />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge !== undefined && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        isActive ? 'bg-[#059669] text-white' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* GROUP 5: SYSTEM & SETTINGS */}
+            <div className="space-y-1">
+              <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 py-1">
+                SYSTEM & SETTINGS
+              </div>
+              {[
+                { id: 'siteSettings', label: 'Site Settings & Footer', icon: Settings },
+                { id: 'logs', label: 'System Export Logs', icon: Download },
+                { id: 'security', label: 'Security & Login Activity', icon: Shield },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${
+                      isActive
+                        ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] font-semibold shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent font-medium'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#059669]' : 'text-slate-400'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
           </nav>
         </div>
 
-        {/* Sidebar Footer (Profile & Logout) */}
-        <div className="p-4 border-t border-slate-800 bg-[#0E1524] space-y-3">
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">System Administrator</p>
-            <p className="text-xs font-black text-white">EcoFone Admin Staff</p>
-          </div>
-          <div className="flex items-center justify-between border-t border-slate-800/60 pt-2.5">
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-450 border border-emerald-500/25 px-2 py-0.5 rounded font-extrabold uppercase">
-              ONLINE
-            </span>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-all border border-slate-800 hover:border-rose-500/20 flex items-center gap-1 text-[10px] font-bold px-2"
-              title="Log Out Session"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span>Log Out</span>
-            </button>
-          </div>
+        {/* Fixed Footer: Red Log Out Button */}
+        <div className="p-3 border-t border-slate-200/80 bg-white space-y-2">
+          <button
+            onClick={handleLogout}
+            className="w-full text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 px-3 py-2 rounded-xl font-bold text-xs transition-colors border border-red-100"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Log Out</span>
+          </button>
         </div>
       </aside>
 
       {/* 2. MAIN WORKSPACE AREA */}
-      <main className="flex-1 h-screen overflow-y-auto flex flex-col relative z-10">
+      <main className="flex-1 h-screen overflow-y-auto flex flex-col relative z-10 bg-[#f8fafc]">
         
-        {/* Top Header Bar */}
-        <header className="min-h-16 border-b border-slate-800 bg-[#0F172A]/40 backdrop-blur-md px-3.5 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between py-3.5 sm:py-0 gap-3 sm:gap-0 shrink-0 sticky top-0 z-30">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 min-w-0">
+        {/* Top Sticky Header Bar (64px, White Surface) */}
+        <header className="h-16 bg-white border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-xs">
+          {/* Left: Dynamic Breadcrumbs */}
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 min-w-0">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white mr-1 transition-all border border-slate-700 shrink-0"
+              className="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 mr-1 transition-all shrink-0"
               title="Open Navigation Menu"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-4 h-4" />
             </button>
             <span className="hidden sm:inline shrink-0">EcoFone Console</span>
             <span className="text-slate-600 hidden sm:inline shrink-0">/</span>
@@ -2713,86 +2892,130 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          {/* Export Actions Hub */}
-          <div className="flex items-center gap-2 sm:gap-2 justify-start sm:justify-end shrink-0">
+          {/* Right: Search Pill, View Live Page ↗ & Export Excel */}
+          <div className="flex items-center gap-3">
+            {/* Global Search Input Pill */}
+            <div className="relative w-64 lg:w-80 hidden md:block">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={globalSearch}
+                onChange={(e) => {
+                  setGlobalSearch(e.target.value);
+                  const q = e.target.value.toLowerCase().trim();
+                  if (q.includes('hero') || q.includes('home')) setActiveTab('heroCms');
+                  else if (q.includes('outlet') || q.includes('store')) setActiveTab('stores');
+                  else if (q.includes('blog') || q.includes('techbyte')) setActiveTab('blogs');
+                  else if (q.includes('faq')) setActiveTab('faqs');
+                  else if (q.includes('review') || q.includes('testimonial')) setActiveTab('testimonials');
+                  else if (q.includes('partner') || q.includes('video') || q.includes('story')) setActiveTab('partnerStories');
+                  else if (q.includes('franchise') || q.includes('lead')) setActiveTab('franchise');
+                  else if (q.includes('contact') || q.includes('inquir')) setActiveTab('contact');
+                  else if (q.includes('cert') || q.includes('verif')) setActiveTab('certificates');
+                  else if (q.includes('team')) setActiveTab('team');
+                  else if (q.includes('setting') || q.includes('footer')) setActiveTab('siteSettings');
+                  else if (q.includes('log')) setActiveTab('logs');
+                  else if (q.includes('secur') || q.includes('login')) setActiveTab('security');
+                }}
+                placeholder="Search admin panels (e.g., 'outlets', 'hero', 'blogs', 'faqs')..."
+                className="w-full bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 pl-9 pr-4 py-2 rounded-full outline-none focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* View Live Page ↗ */}
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#059669] hover:text-[#047857] hover:underline font-semibold text-xs flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
+            >
+              <span>View Live Page ↗</span>
+            </a>
+
+            {/* Export Excel Button */}
             <button
               onClick={handleExcelExport}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] sm:text-[11px] px-3.5 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5"
+              className="bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0"
               title="Export complete database backup as .xlsx file"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span className="hidden sm:inline">Excel Download</span>
-              <span className="sm:hidden">Excel</span>
-            </button>
-             <button
-              onClick={handleShareLinkWhatsApp}
-              className="bg-emerald-500/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 font-bold text-[10px] sm:text-[11px] px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5"
-              title="Share CSV report download URL via WhatsApp"
-            >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.197 1.451 4.811 1.452 5.43.003 9.85-4.403 9.853-9.83.002-2.628-1.018-5.1-2.868-6.952C16.591 1.97 14.121.95 11.5.951c-5.433 0-9.855 4.407-9.858 9.835-.001 1.706.467 3.373 1.356 4.821l-.994 3.634 3.72-.977zm11.582-7.14c-.29-.145-1.716-.847-1.978-.942-.262-.096-.453-.145-.643.14-.19.285-.736.942-.903 1.133-.166.19-.332.213-.622.068-.29-.145-1.22-.45-2.323-1.433-.859-.766-1.438-1.712-1.606-2.002-.166-.29-.018-.447.127-.591.13-.13.29-.34.435-.508.145-.17.193-.285.29-.475.097-.19.047-.356-.024-.5-.071-.144-.643-1.551-.881-2.122-.232-.559-.467-.482-.643-.491-.167-.008-.356-.01-.546-.01s-.5.071-.762.356c-.262.285-.999.976-.999 2.38s1.022 2.762 1.165 2.953c.143.19 2.011 3.071 4.871 4.303.68.293 1.21.468 1.623.6a3.896 3.896 0 0 0 1.777.112c.548-.08 1.716-.701 1.954-1.378.24-.678.24-1.258.167-1.378-.072-.12-.262-.19-.553-.336z"/>
-              </svg>
-              <span className="hidden sm:inline">Share WA</span>
-              <span className="sm:hidden">WA</span>
-            </button>
-             <button
-              onClick={handleShareLinkEmail}
-              className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 font-bold text-[10px] sm:text-[11px] px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5"
-              title="Share CSV report download URL via Email"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="hidden sm:inline">Share Email</span>
-              <span className="sm:hidden">Email</span>
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Export Excel</span>
             </button>
           </div>
         </header>
 
         {/* Dashboard Workspace Padding */}
-        <div className="p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
-          {/* Dashboard KPIs Summary Blocks */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Franchise Requests</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.franchiseCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Active</span>
+          {/* Dashboard KPIs Summary Blocks (Light Mode) */}
+          {activeTab !== 'dashboard' && activeTab !== 'heroCms' && activeTab !== 'partnerStories' && activeTab !== 'testimonials' && activeTab !== 'faqs' && activeTab !== 'siteSettings' && activeTab !== 'blogs' && activeTab !== 'stores' && activeTab !== 'research' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Franchise Requests</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-slate-900">{kpis.franchiseCount}</p>
+                  <span className="text-[9px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">Active</span>
+                </div>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Customer Inquiries</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-slate-900">{kpis.contactCount}</p>
+                  <span className="text-[9px] text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full font-bold border border-orange-200">Inbox</span>
+                </div>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Registered Outlets</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-emerald-600">{kpis.storesCount}</p>
+                  <span className="text-[9px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold border border-emerald-200">Verified</span>
+                </div>
+              </div>
+              <div className="bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Pending Reviews</span>
+                <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
+                  <p className="text-xl sm:text-3xl font-extrabold text-amber-600">{kpis.pendingReviewsCount}</p>
+                  <span className="text-[9px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold border border-amber-200">Moderate</span>
+                </div>
               </div>
             </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Customer Inquiries</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-white">{kpis.contactCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-full font-bold border border-orange-500/15">Inbox</span>
-              </div>
-            </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Registered Outlets</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-emerald-400">{kpis.storesCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-bold border border-emerald-500/15">Verified</span>
-              </div>
-            </div>
-            <div className="bg-[#111827]/85 border border-slate-800/80 p-3.5 sm:p-5 rounded-2xl shadow-sm">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-widest font-black block truncate">Pending Reviews</span>
-              <div className="flex items-baseline justify-between sm:justify-start gap-1.5 sm:gap-2 mt-1">
-                <p className="text-xl sm:text-3xl font-extrabold text-amber-400">{kpis.pendingReviewsCount}</p>
-                <span className="text-[8px] sm:text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full font-bold border border-amber-500/15">Moderate</span>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Main workspace dynamic rendering */}
           <div className="relative">
             {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#090D16]/60 rounded-3xl backdrop-blur-sm z-20 min-h-[300px]">
-                <span className="text-xs text-slate-300 font-bold animate-pulse">Syncing core registry logs...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl backdrop-blur-xs z-20 min-h-[300px]">
+                <span className="text-xs text-slate-600 font-bold animate-pulse">Syncing core registry logs...</span>
               </div>
             )}
+
+            {/* 1. DASHBOARD OVERVIEW */}
+            {activeTab === 'dashboard' && (
+              <DashboardOverview
+                franchiseCount={applications.length}
+                contactCount={contactQueries.length}
+                storesCount={stores.length}
+                blogsCount={blogsCount}
+                reviewsCount={reviews.length}
+                certificatesCount={certificates.length}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
+            )}
+
+            {/* 2. HERO & HOMEPAGE CMS */}
+            {activeTab === 'heroCms' && <HeroCmsManager />}
+
+            {/* 3. PARTNER VIDEO STORIES CMS */}
+            {activeTab === 'partnerStories' && <PartnerStoriesManager />}
+
+            {/* 4. TESTIMONIALS & REVIEWS CMS */}
+            {activeTab === 'testimonials' && <TestimonialsManager />}
+
+            {/* 5. FAQS MANAGER CMS */}
+            {activeTab === 'faqs' && <FaqsManager />}
+
+            {/* 6. SITE SETTINGS & FOOTER */}
+            {activeTab === 'siteSettings' && <SiteSettingsManager />}
 
             {/* A. FRANCHISE APPLICATIONS VIEW */}
             {activeTab === 'franchise' && (() => {
@@ -2809,31 +3032,31 @@ export default function AdminDashboardPage() {
               });
 
               return (
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest">Franchise Lead Registry</h3>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">{applications.length} Total</span>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest">Franchise Lead Registry</h3>
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">{applications.length} Total</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Status Category Dropdown */}
-                      <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-3 py-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Category:</span>
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Category:</span>
                         <select
                           value={franchiseCategoryFilter}
                           onChange={(e) => setFranchiseCategoryFilter(e.target.value as any)}
-                          className="bg-transparent text-emerald-400 font-extrabold text-xs focus:outline-none cursor-pointer"
+                          className="bg-transparent text-[#059669] font-bold text-xs focus:outline-none cursor-pointer"
                         >
-                          <option value="ALL" className="bg-[#111827] text-white">All Records ({applications.length})</option>
-                          <option value="PENDING" className="bg-[#111827] text-amber-400">Pending ({openCount})</option>
-                          <option value="CLOSED" className="bg-[#111827] text-emerald-400">Closed ({closedCount})</option>
+                          <option value="ALL" className="bg-white text-slate-800">All Records ({applications.length})</option>
+                          <option value="PENDING" className="bg-white text-amber-600">Pending ({openCount})</option>
+                          <option value="CLOSED" className="bg-white text-[#059669]">Closed ({closedCount})</option>
                         </select>
                       </div>
 
                       {sessionStorage.getItem('ecofone_admin_role') === 'master' && (
                         <button
                           onClick={() => handleClearLeadsClick('franchise')}
-                          className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl font-bold hover:bg-red-600 hover:text-white transition-colors"
+                          className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-red-100 transition-colors"
                         >
                           🧹 Clear History
                         </button>
@@ -2841,12 +3064,12 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                   {!filteredApps.length ? (
-                    <div className="text-xs text-slate-505 text-center py-16">No franchise lead submissions match the selected category status.</div>
+                    <div className="text-xs text-slate-400 text-center py-16">No franchise lead submissions match the selected category status.</div>
                   ) : (
                     <div className="overflow-x-auto text-[11px] sm:text-xs">
-                      <table className="w-full text-left text-slate-300 min-w-[700px]">
+                      <table className="w-full text-left text-slate-700 min-w-[700px]">
                         <thead>
-                          <tr className="border-b border-slate-800/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                          <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider bg-slate-50/50">
                             <th className="py-3 px-2">Applicant / Details</th>
                             <th className="py-3 px-2">Location Pref</th>
                             <th className="py-3 px-2">Investment Capital</th>
@@ -2855,7 +3078,7 @@ export default function AdminDashboardPage() {
                             <th className="py-3 px-2 text-right">Change Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                        <tbody className="divide-y divide-slate-100">
                           {filteredApps.map((app) => {
                             const appDate = app.createdAt 
                               ? new Date(app.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -2865,19 +3088,19 @@ export default function AdminDashboardPage() {
                             return (
                               <React.Fragment key={app.id}>
                                 {showHeader && (
-                                  <tr className="bg-slate-900/40">
-                                    <td colSpan={6} className="py-2.5 px-3 font-extrabold text-[10px] text-emerald-400 uppercase tracking-widest border-y border-slate-800/80">
+                                  <tr className="bg-slate-50/80">
+                                    <td colSpan={6} className="py-2.5 px-3 font-extrabold text-[10px] text-[#059669] uppercase tracking-widest border-y border-slate-200">
                                       📅 {appDate}
                                     </td>
                                   </tr>
                                 )}
-                          <tr key={app.id} className="hover:bg-slate-900/30 transition-colors">
+                          <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-4 px-2">
-                              <span className="font-bold text-white block text-sm">{app.applicantName}</span>
-                              <span className="text-[10px] text-slate-400 block mt-1">{app.phone} | {app.email}</span>
+                              <span className="font-bold text-slate-900 block text-sm">{app.applicantName}</span>
+                              <span className="text-[10px] text-slate-500 block mt-1">{app.phone} | {app.email}</span>
                             </td>
-                            <td className="py-4 px-2 text-slate-350">{app.locationPreference}</td>
-                            <td className="py-4 px-2 font-black text-white text-sm">₹{app.investmentCapacity.toLocaleString('en-IN')}</td>
+                            <td className="py-4 px-2 text-slate-600">{app.locationPreference}</td>
+                            <td className="py-4 px-2 font-black text-slate-900 text-sm">₹{app.investmentCapacity.toLocaleString('en-IN')}</td>
                             <td className="py-4 px-2 text-center">
                               <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${getStatusStyle(app.status)}`}>
                                 {getCleanStatusLabel(app.status)}
@@ -2887,7 +3110,7 @@ export default function AdminDashboardPage() {
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => shareViaWhatsApp(app, true)}
-                                  className="p-2 rounded-lg bg-slate-800 hover:bg-emerald-600 hover:text-white text-emerald-400 transition-colors border border-slate-700/80"
+                                  className="p-2 rounded-lg bg-slate-50 hover:bg-[#ecfdf5] hover:text-[#059669] text-slate-600 transition-colors border border-slate-200"
                                   title="WhatsApp Chat Outreach"
                                 >
                                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -2896,7 +3119,7 @@ export default function AdminDashboardPage() {
                                 </button>
                                 <button
                                   onClick={() => shareViaEmail(app, true)}
-                                  className="p-2 rounded-lg bg-slate-800 hover:bg-emerald-600 hover:text-white text-emerald-450 transition-colors border border-slate-700/80"
+                                  className="p-2 rounded-lg bg-slate-50 hover:bg-[#ecfdf5] hover:text-[#059669] text-slate-600 transition-colors border border-slate-200"
                                   title="Email Outreach"
                                 >
                                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2910,14 +3133,14 @@ export default function AdminDashboardPage() {
                                 value={getCleanStatusLabel(app.status)}
                                 onChange={(e) => handleUpdateStatus(app.id, e.target.value === 'PENDING' ? 'PENDING' : 'CLOSED')}
                                 disabled={updatingId !== null || getCleanStatusLabel(app.status) === 'CLOSED'}
-                                className={`text-[10px] font-extrabold px-3 py-1.5 rounded-xl uppercase tracking-wider focus:outline-none border transition-all ${
+                                className={`text-[10px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider focus:outline-none border transition-all ${
                                   getCleanStatusLabel(app.status) === 'CLOSED'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 opacity-60 cursor-not-allowed'
-                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 cursor-pointer'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 opacity-60 cursor-not-allowed'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 cursor-pointer'
                                 }`}
                               >
-                                <option value="PENDING" className="bg-[#111827] text-amber-400 font-bold">PENDING</option>
-                                <option value="CLOSED" className="bg-[#111827] text-emerald-400 font-bold">CLOSED</option>
+                                <option value="PENDING" className="bg-white text-amber-700 font-bold">PENDING</option>
+                                <option value="CLOSED" className="bg-white text-emerald-700 font-bold">CLOSED</option>
                               </select>
                             </td>
                           </tr>
@@ -2947,31 +3170,31 @@ export default function AdminDashboardPage() {
               });
 
               return (
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest">Customer Inquiry Tickets</h3>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-medium">{contactQueries.length} Tickets</span>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest">Customer Inquiry Tickets</h3>
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">{contactQueries.length} Tickets</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Status Category Dropdown */}
-                      <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-3 py-1.5">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Category:</span>
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Category:</span>
                         <select
                           value={contactCategoryFilter}
                           onChange={(e) => setContactCategoryFilter(e.target.value as any)}
-                          className="bg-transparent text-emerald-400 font-extrabold text-xs focus:outline-none cursor-pointer"
+                          className="bg-transparent text-[#059669] font-bold text-xs focus:outline-none cursor-pointer"
                         >
-                          <option value="ALL" className="bg-[#111827] text-white">All Tickets ({contactQueries.length})</option>
-                          <option value="PENDING" className="bg-[#111827] text-amber-400">Pending ({openCount})</option>
-                          <option value="CLOSED" className="bg-[#111827] text-emerald-400">Closed ({closedCount})</option>
+                          <option value="ALL" className="bg-white text-slate-800">All Tickets ({contactQueries.length})</option>
+                          <option value="PENDING" className="bg-white text-amber-600">Pending ({openCount})</option>
+                          <option value="CLOSED" className="bg-white text-[#059669]">Closed ({closedCount})</option>
                         </select>
                       </div>
 
                       {sessionStorage.getItem('ecofone_admin_role') === 'master' && (
                         <button
                           onClick={() => handleClearLeadsClick('contact')}
-                          className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl font-bold hover:bg-red-600 hover:text-white transition-colors"
+                          className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-red-100 transition-colors"
                         >
                           🧹 Clear History
                         </button>
@@ -2979,12 +3202,12 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                   {!filteredContacts.length ? (
-                    <div className="text-xs text-slate-505 text-center py-16">No customer inquiry tickets match the selected category status.</div>
+                    <div className="text-xs text-slate-400 text-center py-16">No customer inquiry tickets match the selected category status.</div>
                   ) : (
                     <div className="overflow-x-auto text-[11px] sm:text-xs">
-                      <table className="w-full text-left text-slate-300 min-w-[700px]">
+                      <table className="w-full text-left text-slate-700 min-w-[700px]">
                         <thead>
-                          <tr className="border-b border-slate-800/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                          <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider bg-slate-50/50">
                             <th className="py-3 px-2">Customer Info</th>
                             <th className="py-3 px-2">Query Details</th>
                             <th className="py-3 px-2 text-center">Status</th>
@@ -2992,7 +3215,7 @@ export default function AdminDashboardPage() {
                             <th className="py-3 px-2 text-right">Change Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                        <tbody className="divide-y divide-slate-100">
                           {filteredContacts.map((app) => {
                             const appDate = app.createdAt 
                               ? new Date(app.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -3002,18 +3225,18 @@ export default function AdminDashboardPage() {
                             return (
                               <React.Fragment key={app.id}>
                                 {showHeader && (
-                                  <tr className="bg-slate-900/40">
-                                    <td colSpan={5} className="py-2.5 px-3 font-extrabold text-[10px] text-emerald-400 uppercase tracking-widest border-y border-slate-800/80">
+                                  <tr className="bg-slate-50/80">
+                                    <td colSpan={5} className="py-2.5 px-3 font-extrabold text-[10px] text-[#059669] uppercase tracking-widest border-y border-slate-200">
                                       📅 {appDate}
                                     </td>
                                   </tr>
                                 )}
-                          <tr key={app.id} className="hover:bg-slate-900/30 transition-colors">
+                          <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-4 px-2">
-                              <span className="font-bold text-white block text-sm">{app.applicantName}</span>
-                              <span className="text-[10px] text-slate-400 block mt-1">{app.phone} | {app.email}</span>
+                              <span className="font-bold text-slate-900 block text-sm">{app.applicantName}</span>
+                              <span className="text-[10px] text-slate-500 block mt-1">{app.phone} | {app.email}</span>
                             </td>
-                            <td className="py-4 px-2 text-slate-305 max-w-[280px] break-words whitespace-normal leading-relaxed">
+                            <td className="py-4 px-2 text-slate-600 max-w-[280px] break-words whitespace-normal leading-relaxed">
                               {app.experienceDesc}
                             </td>
                             <td className="py-4 px-2 text-center">
@@ -3025,7 +3248,7 @@ export default function AdminDashboardPage() {
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => shareViaWhatsApp(app, false)}
-                                  className="p-2 rounded-lg bg-slate-800 hover:bg-emerald-600 hover:text-white text-emerald-450 transition-colors border border-slate-700/80"
+                                  className="p-2 rounded-lg bg-slate-50 hover:bg-[#ecfdf5] hover:text-[#059669] text-slate-600 transition-colors border border-slate-200"
                                   title="WhatsApp Chat Outreach"
                                 >
                                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -3034,7 +3257,7 @@ export default function AdminDashboardPage() {
                                 </button>
                                 <button
                                   onClick={() => shareViaEmail(app, false)}
-                                  className="p-2 rounded-lg bg-slate-800 hover:bg-emerald-600 hover:text-white text-emerald-455 transition-colors border border-slate-700/80"
+                                  className="p-2 rounded-lg bg-slate-50 hover:bg-[#ecfdf5] hover:text-[#059669] text-slate-600 transition-colors border border-slate-200"
                                   title="Email Outreach"
                                 >
                                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3048,14 +3271,14 @@ export default function AdminDashboardPage() {
                                 value={getCleanStatusLabel(app.status)}
                                 onChange={(e) => handleUpdateStatus(app.id, e.target.value === 'PENDING' ? 'PENDING' : 'CLOSED')}
                                 disabled={updatingId !== null || getCleanStatusLabel(app.status) === 'CLOSED'}
-                                className={`text-[10px] font-extrabold px-3 py-1.5 rounded-xl uppercase tracking-wider focus:outline-none border transition-all ${
+                                className={`text-[10px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider focus:outline-none border transition-all ${
                                   getCleanStatusLabel(app.status) === 'CLOSED'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 opacity-60 cursor-not-allowed'
-                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 cursor-pointer'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 opacity-60 cursor-not-allowed'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 cursor-pointer'
                                 }`}
                               >
-                                <option value="PENDING" className="bg-[#111827] text-amber-400 font-bold">PENDING</option>
-                                <option value="CLOSED" className="bg-[#111827] text-emerald-400 font-bold">CLOSED</option>
+                                <option value="PENDING" className="bg-white text-amber-700 font-bold">PENDING</option>
+                                <option value="CLOSED" className="bg-white text-emerald-700 font-bold">CLOSED</option>
                               </select>
                             </td>
                           </tr>
@@ -3078,14 +3301,14 @@ export default function AdminDashboardPage() {
 
             {/* D. SYSTEM LOGS (EXPORT HISTORY) VIEW */}
             {activeTab === 'logs' && (
-              <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                <div className="pb-3 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest">System Export & Download Logs</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Logs showing CSV/Excel backup downloads and shares in current workspace</p>
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest">System Export & Download Logs</h3>
+                    <p className="text-[10px] text-slate-500 mt-1">Logs showing CSV/Excel backup downloads and shares in current workspace</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400">Clear Logs:</span>
+                    <span className="text-[10px] font-bold text-slate-500">Clear Logs:</span>
                     <select
                       onChange={(e) => {
                         if (e.target.value) {
@@ -3093,7 +3316,7 @@ export default function AdminDashboardPage() {
                           e.target.value = ''; // reset selection
                         }
                       }}
-                      className="bg-[#1F2937]/80 border border-slate-700 text-slate-200 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      className="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-semibold px-2.5 py-1.5 rounded-xl focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
                       <option value="">Select range...</option>
                       <option value="today">Today's Logs</option>
@@ -3105,12 +3328,12 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
                 {!downloadHistory.length ? (
-                  <div className="text-xs text-slate-505 text-center py-16">No exports or shares recorded in the current session logs.</div>
+                  <div className="text-xs text-slate-400 text-center py-16">No exports or shares recorded in the current session logs.</div>
                 ) : (
                   <div className="overflow-x-auto text-[11px] sm:text-xs">
-                    <table className="w-full text-left text-slate-300 min-w-[600px]">
+                    <table className="w-full text-left text-slate-700 min-w-[600px]">
                       <thead>
-                        <tr className="border-b border-slate-800/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                        <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider bg-slate-50/50">
                           <th className="py-3 px-2">Export Log ID</th>
                           <th className="py-3 px-2">Action / Export Type</th>
                           <th className="py-3 px-2">Operator</th>
@@ -3118,15 +3341,15 @@ export default function AdminDashboardPage() {
                           <th className="py-3 px-2 text-right">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/50">
+                      <tbody className="divide-y divide-slate-100">
                         {downloadHistory.map((log) => (
-                          <tr key={log.id} className="hover:bg-slate-900/30 transition-colors">
-                            <td className="py-4 px-2 text-slate-500 font-mono text-[10px]">{log.id.slice(0, 8)}...</td>
-                            <td className="py-4 px-2 font-bold text-white">{log.action}</td>
-                            <td className="py-4 px-2 text-emerald-450 font-bold">{log.operator} <span className="text-[9px] text-slate-500 font-normal">({log.role})</span></td>
-                            <td className="py-4 px-2">{log.createdAt ? (new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })) : 'N/A'}</td>
+                          <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-4 px-2 text-slate-400 font-mono text-[10px]">{log.id.slice(0, 8)}...</td>
+                            <td className="py-4 px-2 font-bold text-slate-800">{log.action}</td>
+                            <td className="py-4 px-2 text-[#059669] font-bold">{log.operator} <span className="text-[9px] text-slate-400 font-normal">({log.role})</span></td>
+                            <td className="py-4 px-2 text-slate-600">{log.createdAt ? (new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + new Date(log.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })) : 'N/A'}</td>
                             <td className="py-4 px-2 text-right">
-                              <span className="text-[9px] bg-emerald-500/10 text-emerald-450 border border-emerald-500/25 px-2 py-0.5 rounded font-extrabold uppercase">
+                              <span className="text-[9px] bg-emerald-50 text-[#059669] border border-emerald-200 px-2 py-0.5 rounded font-bold uppercase">
                                 SUCCESS
                               </span>
                             </td>
@@ -3144,15 +3367,15 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Left (2/3 width) - Team Members list */}
                 <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                    <h4 className="text-xs text-emerald-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-800">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                    <h4 className="text-xs text-[#059669] font-extrabold uppercase tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-100">
                       <span>👥 Active Key Team Members</span>
-                      <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-black">
+                      <span className="text-[10px] bg-emerald-50 border border-emerald-200 text-[#059669] px-2 py-0.5 rounded-full font-bold">
                         {teamMembers.length}
                       </span>
                     </h4>
                     {!teamMembers.length ? (
-                      <div className="text-xs text-slate-500 text-center py-16">
+                      <div className="text-xs text-slate-400 text-center py-16">
                         No team members registered. Use the panel on the right to add key staff.
                       </div>
                     ) : (
@@ -3160,23 +3383,23 @@ export default function AdminDashboardPage() {
                         {teamMembers.map((member) => (
                           <div 
                             key={member.id} 
-                            className="bg-slate-900/30 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between space-y-3 hover:border-slate-700 transition-all duration-200"
+                            className="bg-slate-50/60 border border-slate-200 p-4 rounded-xl flex flex-col justify-between space-y-3 hover:border-slate-300 transition-all duration-200"
                           >
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-xs">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#059669] font-black text-xs">
                                     {member.initials}
                                   </div>
                                   <div>
-                                    <h5 className="font-bold text-white leading-normal text-sm">{member.name}</h5>
-                                    <span className="text-[9px] text-ecoOrange-500 font-bold uppercase tracking-wider block">{member.role}</span>
+                                    <h5 className="font-bold text-slate-900 leading-normal text-sm">{member.name}</h5>
+                                    <span className="text-[9px] text-[#ea580c] font-bold uppercase tracking-wider block">{member.role}</span>
                                   </div>
                                 </div>
                               </div>
-                              <p className="text-[10px] text-slate-400 leading-relaxed pt-1.5 border-t border-slate-800/40">{member.bio}</p>
+                              <p className="text-[10px] text-slate-600 leading-relaxed pt-1.5 border-t border-slate-200/80">{member.bio}</p>
                             </div>
-                            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-800 mt-2">
+                            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200 mt-2">
                               <button
                                 onClick={() => {
                                   setEditTeamMember(member);
@@ -3190,13 +3413,13 @@ export default function AdminDashboardPage() {
                                   setEditTeamGithub(member.githubUrl || '');
                                   setEditTeamError('');
                                 }}
-                                className="text-[9px] font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-2.5 py-1.5 rounded-lg hover:bg-emerald-600 hover:text-white transition-all"
+                                className="text-[9px] font-bold text-[#059669] bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition-all"
                               >
                                 Edit Details
                               </button>
                               <button
                                 onClick={() => handleDeleteTeamMember(member.id)}
-                                className="text-[9px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/25 px-2.5 py-1.5 rounded-lg hover:bg-rose-600 hover:text-white transition-all"
+                                className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-all"
                               >
                                 Remove
                               </button>
@@ -3209,15 +3432,15 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Right (1/3 width) - Add Team Member Form */}
-                <div className="lg:col-span-1 bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80">
-                    <h4 className="text-xs text-slate-100 font-extrabold uppercase tracking-widest">Register Staff Member</h4>
-                    <p className="text-[9px] text-slate-450 mt-1">Append key founders/technicians to display cards roster</p>
+                <div className="lg:col-span-1 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100">
+                    <h4 className="text-xs text-slate-800 font-extrabold uppercase tracking-widest">Register Staff Member</h4>
+                    <p className="text-[9px] text-slate-400 mt-1">Append key founders/technicians to display cards roster</p>
                   </div>
 
                   <form onSubmit={handleAddTeamMember} className="space-y-4 text-xs">
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         Full Name <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <input
@@ -3226,12 +3449,12 @@ export default function AdminDashboardPage() {
                         placeholder="e.g. Ishaan Verma"
                         value={teamName}
                         onChange={(e) => setTeamName(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         Role / Designation <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <input
@@ -3240,12 +3463,12 @@ export default function AdminDashboardPage() {
                         placeholder="e.g. Lead Hardware Architect"
                         value={teamRole}
                         onChange={(e) => setTeamRole(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         Bio / Short Description <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <textarea
@@ -3255,12 +3478,12 @@ export default function AdminDashboardPage() {
                         maxLength={200}
                         value={teamBio}
                         onChange={(e) => setTeamBio(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white resize-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         Staff Photo Source
                       </label>
                       <div className="flex gap-2 mb-2">
@@ -3269,8 +3492,8 @@ export default function AdminDashboardPage() {
                           onClick={() => { setImageSourceType('upload'); setTeamImageUrl(''); }}
                           className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all border ${
                             imageSourceType === 'upload'
-                              ? 'bg-emerald-600 border-emerald-500 text-white'
-                              : 'bg-slate-800 border-slate-700 text-slate-455'
+                              ? 'bg-[#059669] border-[#059669] text-white'
+                              : 'bg-slate-100 border-slate-200 text-slate-600'
                           }`}
                         >
                           Upload File
@@ -3280,8 +3503,8 @@ export default function AdminDashboardPage() {
                           onClick={() => { setImageSourceType('url'); setTeamImageUrl(''); }}
                           className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all border ${
                             imageSourceType === 'url'
-                              ? 'bg-emerald-600 border-emerald-500 text-white'
-                              : 'bg-slate-800 border-slate-700 text-slate-455'
+                              ? 'bg-[#059669] border-[#059669] text-white'
+                              : 'bg-slate-100 border-slate-200 text-slate-600'
                           }`}
                         >
                           Image URL
@@ -3290,7 +3513,7 @@ export default function AdminDashboardPage() {
 
                       {imageSourceType === 'upload' ? (
                         <div className="space-y-2">
-                          <div className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all relative bg-[#1F2937]/20">
+                          <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all relative bg-slate-50/60">
                             <input
                               type="file"
                               accept="image/*"
@@ -3299,20 +3522,20 @@ export default function AdminDashboardPage() {
                             />
                             <div className="space-y-1.5">
                               <span className="text-xl block">📷</span>
-                              <span className="text-[10px] font-bold text-slate-350 block">Click or Drag Portrait Photo</span>
-                              <span className="text-[8px] text-slate-500 block">PNG, JPG, or WEBP (Max 2MB)</span>
+                              <span className="text-[10px] font-bold text-slate-700 block">Click or Drag Portrait Photo</span>
+                              <span className="text-[8px] text-slate-400 block">PNG, JPG, or WEBP (Max 2MB)</span>
                             </div>
                           </div>
                           {teamImageUrl && teamImageUrl.startsWith('data:') && (
-                            <div className="flex items-center justify-between bg-slate-900/40 p-2 rounded-xl border border-slate-800">
+                            <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
                               <div className="flex items-center gap-2">
-                                <img src={teamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-750" />
-                                <span className="text-[9px] text-emerald-400 font-extrabold uppercase">Photo Loaded</span>
+                                <img src={teamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                                <span className="text-[9px] text-[#059669] font-extrabold uppercase">Photo Loaded</span>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => setTeamImageUrl('')}
-                                className="text-[10px] text-rose-400 hover:text-rose-350 font-bold px-2 py-1"
+                                className="text-[10px] text-rose-600 hover:text-rose-700 font-bold px-2 py-1"
                               >
                                 Remove
                               </button>
@@ -3326,12 +3549,12 @@ export default function AdminDashboardPage() {
                             placeholder="e.g. https://images.unsplash.com/..."
                             value={teamImageUrl}
                             onChange={(e) => setTeamImageUrl(e.target.value)}
-                            className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                           />
                           {teamImageUrl && (
-                            <div className="mt-2 p-2 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2">
-                              <img src={teamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-750" onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
-                              <span className="text-[9px] text-slate-400">External URL Preview</span>
+                            <div className="mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2">
+                              <img src={teamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
+                              <span className="text-[9px] text-slate-500">External URL Preview</span>
                             </div>
                           )}
                         </div>
@@ -3339,7 +3562,7 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         LinkedIn Profile URL (Optional)
                       </label>
                       <input
@@ -3347,12 +3570,12 @@ export default function AdminDashboardPage() {
                         placeholder="https://linkedin.com/in/username"
                         value={teamLinkedin}
                         onChange={(e) => setTeamLinkedin(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         Twitter / X Profile URL (Optional)
                       </label>
                       <input
@@ -3360,12 +3583,12 @@ export default function AdminDashboardPage() {
                         placeholder="https://twitter.com/username"
                         value={teamTwitter}
                         onChange={(e) => setTeamTwitter(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                         GitHub Profile URL (Optional)
                       </label>
                       <input
@@ -3373,14 +3596,14 @@ export default function AdminDashboardPage() {
                         placeholder="https://github.com/username"
                         value={teamGithub}
                         onChange={(e) => setTeamGithub(e.target.value)}
-                        className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={isAddingTeam}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all shadow hover:scale-[1.01]"
+                      className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold py-3 rounded-xl transition-all shadow-sm"
                     >
                       {isAddingTeam ? 'Registering...' : 'Add Team Member'}
                     </button>
@@ -3389,20 +3612,19 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            {/* E. SECURITY SETTINGS (CHANGE PASSWORD & SUB-ADMINS) VIEW */}
             {activeTab === 'security' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start max-w-4xl">
                 {/* Left Card: Master Password Update */}
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80">
-                    <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                       <span>🔑 Master Security Credentials</span>
                     </h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Change the master password used to authorize administrative features.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Change the master password used to authorize administrative features.</p>
                   </div>
                   <form onSubmit={handleChangePasswordSubmit} className="space-y-4 text-xs">
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
                         Current Password <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <div className="relative">
@@ -3412,12 +3634,12 @@ export default function AdminDashboardPage() {
                           placeholder="••••••••"
                           value={currentPasswordInput}
                           onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                          className="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-650 font-mono"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all placeholder:text-slate-400 font-mono"
                         />
                         <button
                           type="button"
                           onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors p-1"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1"
                           title={showCurrentPassword ? "Hide password" : "Show password"}
                         >
                           {showCurrentPassword ? (
@@ -3434,7 +3656,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
                         New Password <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <div className="relative">
@@ -3447,12 +3669,12 @@ export default function AdminDashboardPage() {
                             setNewPasswordInput(e.target.value);
                             setPasswordChangeError('');
                           }}
-                          className="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-650 font-mono"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all placeholder:text-slate-400 font-mono"
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors p-1"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1"
                           title={showNewPassword ? "Hide password" : "Show password"}
                         >
                           {showNewPassword ? (
@@ -3469,7 +3691,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-slate-400 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
+                      <label className="block text-slate-600 font-semibold mb-1.5 text-[10px] uppercase tracking-wider">
                         Confirm New Password <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <div className="relative">
@@ -3482,12 +3704,12 @@ export default function AdminDashboardPage() {
                             setConfirmPasswordInput(e.target.value);
                             setPasswordChangeError('');
                           }}
-                          className="w-full bg-slate-900/60 border border-slate-800/80 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-650 font-mono"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all placeholder:text-slate-400 font-mono"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors p-1"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1"
                           title={showConfirmPassword ? "Hide password" : "Show password"}
                         >
                           {showConfirmPassword ? (
@@ -3505,14 +3727,14 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {passwordChangeError && (
-                      <div className="text-rose-400 text-[11px] font-bold bg-rose-500/10 border border-rose-500/20 px-3.5 py-2.5 rounded-xl flex items-center gap-2">
+                      <div className="text-rose-700 text-[11px] font-semibold bg-rose-50 border border-rose-200 px-3.5 py-2.5 rounded-xl flex items-center gap-2">
                         <span>⚠️</span>
                         <span>{passwordChangeError}</span>
                       </div>
                     )}
 
                     {passwordChangeStatus && (
-                      <div className="text-emerald-450 text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 rounded-xl flex items-center gap-2">
+                      <div className="text-emerald-700 text-[11px] font-semibold bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 rounded-xl flex items-center gap-2">
                         <span>✅</span>
                         <span>{passwordChangeStatus}</span>
                       </div>
@@ -3520,7 +3742,7 @@ export default function AdminDashboardPage() {
 
                     <button
                       type="submit"
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-lg hover:shadow-emerald-600/10 hover:scale-[1.01]"
+                      className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs py-3 rounded-xl transition-all shadow-sm"
                     >
                       Update Security Password
                     </button>
@@ -3528,26 +3750,26 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Right Card: Sub-Admin Accounts Management */}
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80">
-                    <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest">Sub-Admin Management</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Create up to 4 sub-admin accounts and customize their administrative access levels.</p>
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest">Sub-Admin Management</h3>
+                    <p className="text-[10px] text-slate-500 mt-1">Create up to 4 sub-admin accounts and customize their administrative access levels.</p>
                   </div>
 
                   {/* Sub-Admins list */}
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Sub-Admins ({subAdmins.length}/4)</h4>
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Sub-Admins ({subAdmins.length}/4)</h4>
                     {subAdmins.length === 0 ? (
-                      <p className="text-[10px] text-slate-550 italic py-2">No sub-admin accounts configured.</p>
+                      <p className="text-[10px] text-slate-400 italic py-2">No sub-admin accounts configured.</p>
                     ) : (
                       <div className="space-y-2">
                         {subAdmins.map((sa) => (
-                          <div key={sa.id} className="flex items-center justify-between bg-[#1F2937]/30 border border-slate-800 rounded-2xl px-4 py-3 text-xs">
+                          <div key={sa.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs">
                             <div className="max-w-[55%]">
-                              <p className="font-extrabold text-slate-200">{sa.username}</p>
+                              <p className="font-extrabold text-slate-800">{sa.username}</p>
                               <div className="flex flex-wrap gap-1 mt-1.5">
                                 {(sa.permissions || ['franchise', 'contact']).map((perm) => (
-                                  <span key={perm} className="text-[8px] font-extrabold text-emerald-450 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10 uppercase tracking-wider">
+                                  <span key={perm} className="text-[8px] font-bold text-[#059669] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wider">
                                     {perm === 'stores' ? 'outlets' : perm === 'franchise' ? 'franchise' : perm === 'contact' ? 'contact' : perm === 'team' ? 'team' : perm}
                                   </span>
                                 ))}
@@ -3556,19 +3778,19 @@ export default function AdminDashboardPage() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleEditSubAdminClick(sa.id, sa.username, sa.permissions)}
-                                className="text-[9px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/20 px-2 py-1 rounded-lg transition-all"
+                                className="text-[9px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-lg transition-all"
                               >
                                 Access
                               </button>
                               <button
                                 onClick={() => handleResetSubAdminClick(sa.id, sa.username)}
-                                className="text-[9px] font-bold text-emerald-455 hover:text-emerald-350 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 hover:border-emerald-500/20 px-2 py-1 rounded-lg transition-all"
+                                className="text-[9px] font-bold text-[#059669] hover:text-[#047857] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg transition-all"
                               >
                                 Pass
                               </button>
                               <button
                                 onClick={() => handleRevokeClick(sa.id, sa.username)}
-                                className="text-[9px] font-bold text-rose-400 hover:text-rose-350 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/10 hover:border-rose-500/20 px-2 py-1 rounded-lg transition-all"
+                                className="text-[9px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-lg transition-all"
                               >
                                 Revoke
                               </button>
@@ -3581,24 +3803,24 @@ export default function AdminDashboardPage() {
 
                   {/* Create form (shown only if limit is not exceeded) */}
                   {subAdmins.length < 4 ? (
-                    <form onSubmit={handleCreateSubAdmin} className="space-y-4 text-xs pt-2 border-t border-slate-800/80">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Add Sub-Admin Credentials</h4>
+                    <form onSubmit={handleCreateSubAdmin} className="space-y-4 text-xs pt-2 border-t border-slate-100">
+                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Add Sub-Admin Credentials</h4>
                       
                       {subAdminError && (
-                        <div className="text-rose-450 text-[10px] font-bold bg-rose-500/5 border border-rose-500/10 p-2.5 rounded-lg">
+                        <div className="text-rose-700 text-[10px] font-semibold bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
                           {subAdminError}
                         </div>
                       )}
 
                       {subAdminSuccess && (
-                        <div className="text-emerald-450 text-[10px] font-bold bg-emerald-500/5 border border-emerald-500/10 p-2.5 rounded-lg">
+                        <div className="text-emerald-700 text-[10px] font-semibold bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg">
                           {subAdminSuccess}
                         </div>
                       )}
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-slate-400 font-semibold mb-1 text-[9px] uppercase tracking-wider">Username</label>
+                          <label className="block text-slate-600 font-semibold mb-1 text-[9px] uppercase tracking-wider">Username</label>
                           <input
                             type="text"
                             required
@@ -3608,11 +3830,11 @@ export default function AdminDashboardPage() {
                               setSubAdminUsername(e.target.value);
                               setSubAdminError('');
                             }}
-                            className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-slate-400 font-semibold mb-1 text-[9px] uppercase tracking-wider">Password</label>
+                          <label className="block text-slate-600 font-semibold mb-1 text-[9px] uppercase tracking-wider">Password</label>
                           <div className="relative">
                             <input
                               type={showSubAdminPassword ? "text" : "password"}
@@ -3623,12 +3845,12 @@ export default function AdminDashboardPage() {
                                 setSubAdminPassword(e.target.value);
                                 setSubAdminError('');
                               }}
-                              className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl pl-3 pr-8 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-8 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white font-mono"
                             />
                             <button
                               type="button"
                               onClick={() => setShowSubAdminPassword(!showSubAdminPassword)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors p-1"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors p-1"
                               title={showSubAdminPassword ? "Hide password" : "Show password"}
                             >
                               {showSubAdminPassword ? (
@@ -3648,7 +3870,7 @@ export default function AdminDashboardPage() {
 
                       {/* Checkboxes for custom access levels */}
                       <div className="space-y-2 pt-1">
-                        <label className="block text-slate-450 font-semibold text-[9px] uppercase tracking-wider mb-1">Select Access Permissions</label>
+                        <label className="block text-slate-500 font-semibold text-[9px] uppercase tracking-wider mb-1">Select Access Permissions</label>
                         <div className="grid grid-cols-2 gap-2 text-[10px]">
                           {[
                             { id: 'franchise', label: 'Franchise Apps' },
@@ -3663,7 +3885,7 @@ export default function AdminDashboardPage() {
                             { id: 'research', label: 'Research Articles' },
                             { id: 'careers', label: 'Careers & Hiring CMS' },
                           ].map((item) => (
-                            <label key={item.id} className="flex items-center gap-2 bg-[#1F2937]/35 border border-slate-800/80 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1F2937]/60 transition-all">
+                            <label key={item.id} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer hover:bg-slate-100 transition-all">
                               <input
                                 type="checkbox"
                                 checked={newAdminPermissions.includes(item.id)}
@@ -3673,9 +3895,9 @@ export default function AdminDashboardPage() {
                                   );
                                   setSubAdminError('');
                                 }}
-                                className="rounded bg-slate-800 border-slate-750 text-emerald-600 focus:ring-emerald-500/20 w-3.5 h-3.5"
+                                className="rounded border-slate-300 text-[#059669] focus:ring-emerald-500/20 w-3.5 h-3.5"
                               />
-                              <span className="text-slate-350 font-bold select-none">{item.label}</span>
+                              <span className="text-slate-700 font-semibold select-none">{item.label}</span>
                             </label>
                           ))}
                         </div>
@@ -3683,13 +3905,13 @@ export default function AdminDashboardPage() {
 
                       <button
                         type="submit"
-                        className="w-full bg-[#0a2d1a] hover:bg-[#0c3d23] border border-emerald-500/10 text-white font-extrabold py-3 rounded-xl transition-all shadow hover:scale-[1.01]"
+                        className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold py-3 rounded-xl transition-all shadow-sm"
                       >
                         Create Sub-Admin Account
                       </button>
                     </form>
                   ) : (
-                    <div className="bg-amber-500/5 border border-amber-500/10 text-amber-450 p-4 rounded-2xl text-[10px] text-center font-bold">
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-[10px] text-center font-bold">
                       ⚠ Maximum limit of 4 sub-admin credentials created. Remove an active credential to add a new account.
                     </div>
                   )}
@@ -3703,48 +3925,48 @@ export default function AdminDashboardPage() {
               const filteredReviews = reviews.filter(r => r.status === reviewFilterStatus);
               const sortedReviews = [...filteredReviews].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
               return (
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="space-y-1">
-                      <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                         <span>⭐ Reviews Moderation Registry</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400">Moderate existing client feedback or post official Business Owner reviews to feature on the storefront.</p>
+                      <p className="text-[10px] text-slate-500">Moderate existing client feedback or post official Business Owner reviews to feature on the storefront.</p>
                     </div>
                     <div className="flex items-center flex-wrap gap-2.5 shrink-0">
                       <button
                         onClick={() => setOwnerReviewOpen(true)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-all shadow flex items-center gap-1.5"
+                        className="bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5"
                         title="Publish an official Business Owner Review"
                       >
                         <span>🏢 Write Business Owner Review</span>
                       </button>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Show Status:</span>
+                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Show Status:</span>
                         <select
                           value={reviewFilterStatus}
                           onChange={(e: any) => setReviewFilterStatus(e.target.value)}
-                          className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors"
+                          className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
                         >
                           <option value="PENDING">Pending Approval</option>
                           <option value="APPROVED">Approved / Live</option>
                           <option value="REJECTED">Rejected / Hidden</option>
                         </select>
                       </div>
-                      <span className="text-[10px] bg-slate-800 text-slate-455 px-2.5 py-1 rounded font-medium border border-slate-800/60">
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded font-semibold border border-slate-200">
                         {filteredReviews.length} Matches
                       </span>
                     </div>
                   </div>
                   {!filteredReviews.length ? (
-                    <div className="text-xs text-slate-500 text-center py-16">
-                      No reviews found matching the status: <strong className="text-slate-350">{reviewFilterStatus}</strong>.
+                    <div className="text-xs text-slate-400 text-center py-16">
+                      No reviews found matching the status: <strong className="text-slate-600">{reviewFilterStatus}</strong>.
                     </div>
                   ) : (
                     <div className="overflow-x-auto text-[11px] sm:text-xs">
-                      <table className="w-full text-left text-slate-300 min-w-[900px]">
+                      <table className="w-full text-left text-slate-700 min-w-[900px]">
                         <thead>
-                          <tr className="border-b border-slate-800/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                          <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider bg-slate-50/50">
                             <th className="py-3 px-2">Author / Product</th>
                             <th className="py-3 px-2 text-center">Rating</th>
                             <th className="py-3 px-2">Review Comment</th>
@@ -3752,7 +3974,7 @@ export default function AdminDashboardPage() {
                             <th className="py-3 px-2 text-right">Moderation Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                        <tbody className="divide-y divide-slate-100">
                           {sortedReviews.map((rev) => {
                             const revDate = rev.createdAt 
                               ? new Date(rev.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -3763,28 +3985,28 @@ export default function AdminDashboardPage() {
                             return (
                               <React.Fragment key={rev.id}>
                                 {showHeader && (
-                                  <tr className="bg-slate-900/40">
-                                    <td colSpan={5} className="py-2.5 px-3 font-extrabold text-[10px] text-emerald-400 uppercase tracking-widest border-y border-slate-800/80">
+                                  <tr className="bg-slate-50/80">
+                                    <td colSpan={5} className="py-2.5 px-3 font-extrabold text-[10px] text-[#059669] uppercase tracking-widest border-y border-slate-200">
                                       📅 {revDate}
                                     </td>
                                   </tr>
                                 )}
-                                <tr className="hover:bg-slate-900/30 transition-colors">
+                                <tr className="hover:bg-slate-50/80 transition-colors">
                                   <td className="py-4 px-2">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-bold text-white block text-sm">{rev.authorName}</span>
+                                      <span className="font-bold text-slate-900 block text-sm">{rev.authorName}</span>
                                       {rev.isVerified && (
                                         <span className={`text-[9px] font-extrabold border px-1.5 py-0.5 rounded uppercase tracking-wider ${
                                           isOwner
-                                            ? 'bg-blue-500/10 border-blue-500/25 text-blue-400'
-                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-450'
+                                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                         }`}>
                                           {isOwner ? '🏢 Verified Business Owner' : '✓ Verified Buyer'}
                                         </span>
                                       )}
                                     </div>
                                     {(rev.subtitle || rev.verifiedProduct) && (
-                                      <span className="text-[10px] text-emerald-400 font-semibold mt-0.5 block">
+                                      <span className="text-[10px] text-[#059669] font-semibold mt-0.5 block">
                                         🛒 {(rev.subtitle || rev.verifiedProduct)}
                                       </span>
                                     )}
@@ -3794,22 +4016,22 @@ export default function AdminDashboardPage() {
                                       {Array.from({ length: 5 }).map((_, i) => (
                                         <span 
                                           key={i} 
-                                          className={i < rev.rating ? 'text-amber-450' : 'text-slate-700'}
+                                          className={i < rev.rating ? 'text-amber-500' : 'text-slate-300'}
                                         >
                                           ★
                                         </span>
                                       ))}
                                     </div>
                                   </td>
-                                  <td className="py-4 px-2 text-slate-300 max-w-[300px] break-words whitespace-normal leading-relaxed">
+                                  <td className="py-4 px-2 text-slate-700 max-w-[300px] break-words whitespace-normal leading-relaxed">
                                     <div className="space-y-2">
-                                      <p className="text-slate-350">"{rev.comment}"</p>
+                                      <p className="text-slate-700">"{rev.comment}"</p>
                                       {rev.adminReply && (
-                                        <div className="bg-[#1f2937]/35 border border-[#374151]/40 rounded-xl p-2.5 space-y-1">
-                                          <span className="text-[8px] font-extrabold uppercase tracking-wider text-emerald-455 block">
+                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1">
+                                          <span className="text-[8px] font-extrabold uppercase tracking-wider text-[#059669] block">
                                             Admin Reply:
                                           </span>
-                                          <p className="text-[10px] text-slate-400 leading-normal italic">
+                                          <p className="text-[10px] text-slate-600 leading-normal italic">
                                             "{rev.adminReply}"
                                           </p>
                                         </div>
@@ -3819,10 +4041,10 @@ export default function AdminDashboardPage() {
                                   <td className="py-4 px-2 text-center">
                                     <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                                       rev.status === 'APPROVED' 
-                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' 
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                                         : rev.status === 'REJECTED' 
-                                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/25' 
-                                        : 'bg-orange-500/10 text-orange-400 border border-orange-500/25'
+                                        ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
                                     }`}>
                                       {rev.status}
                                     </span>
@@ -3832,14 +4054,14 @@ export default function AdminDashboardPage() {
                                       <button
                                         disabled={updatingId !== null || rev.status === 'APPROVED'}
                                         onClick={() => handleUpdateReviewStatus(rev.id, 'APPROVED')}
-                                        className="bg-[#0a2d1a] hover:bg-[#0c3d23] text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-50 transition-all uppercase tracking-wider"
+                                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-50 transition-all uppercase tracking-wider"
                                       >
                                         Approve
                                       </button>
                                       <button
                                         disabled={updatingId !== null || rev.status === 'REJECTED'}
                                         onClick={() => handleUpdateReviewStatus(rev.id, 'REJECTED')}
-                                        className="bg-[#3b0d11] hover:bg-[#521319] text-rose-400 border border-rose-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-50 transition-all uppercase tracking-wider"
+                                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-50 transition-all uppercase tracking-wider"
                                       >
                                         Reject
                                       </button>
@@ -3848,8 +4070,8 @@ export default function AdminDashboardPage() {
                                         onClick={() => handleToggleReviewVerified(rev.id, rev.isVerified)}
                                         className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 uppercase tracking-wider ${
                                           rev.isVerified 
-                                            ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/25' 
-                                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                                            ? 'bg-emerald-50 text-[#059669] border border-emerald-200' 
+                                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
                                         }`}
                                       >
                                         {rev.isVerified 
@@ -3866,7 +4088,7 @@ export default function AdminDashboardPage() {
                                             setReplyInputText(rev.adminReply || '');
                                           }
                                         }}
-                                        className="bg-[#1f2937] hover:bg-[#374151] text-slate-300 border border-[#4b5563]/30 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
+                                        className="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
                                       >
                                         {activeReplyReviewId === rev.id ? 'Cancel' : rev.adminReply ? 'Edit Reply' : 'Reply'}
                                       </button>
@@ -3879,14 +4101,14 @@ export default function AdminDashboardPage() {
                                           setEditVerifiedProduct((rev.subtitle || rev.verifiedProduct) || '');
                                           setEditReviewOpen(true);
                                         }}
-                                        className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
+                                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
                                       >
                                         Edit
                                       </button>
                                       <button
                                         disabled={updatingId !== null}
                                         onClick={() => handleDeleteReview(rev.id)}
-                                        className="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
+                                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider"
                                       >
                                         Delete
                                       </button>
@@ -3894,10 +4116,10 @@ export default function AdminDashboardPage() {
                                   </td>
                                 </tr>
                                 {activeReplyReviewId === rev.id && (
-                                  <tr className="bg-slate-900/40">
-                                    <td colSpan={5} className="py-3.5 px-4 border-t border-slate-800">
+                                  <tr className="bg-slate-50/80">
+                                    <td colSpan={5} className="py-3.5 px-4 border-t border-slate-200">
                                       <div className="flex flex-col gap-2 max-w-2xl">
-                                        <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                                           EcoFone Response Text
                                         </label>
                                         <div className="flex gap-2">
@@ -3906,12 +4128,12 @@ export default function AdminDashboardPage() {
                                             value={replyInputText}
                                             onChange={(e) => setReplyInputText(e.target.value)}
                                             placeholder="Write official response message..."
-                                            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-650 focus:outline-none focus:border-emerald-500/50"
+                                            className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
                                           />
                                           <button
                                             disabled={isSubmittingReply || !replyInputText.trim()}
                                             onClick={() => handleUpdateReviewReply(rev.id)}
-                                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 whitespace-nowrap"
+                                            className="bg-[#059669] hover:bg-[#047857] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 whitespace-nowrap shadow-sm"
                                           >
                                             {isSubmittingReply ? 'Saving...' : 'Save Response'}
                                           </button>
@@ -3934,61 +4156,61 @@ export default function AdminDashboardPage() {
             {activeTab === 'certificates' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
                 {/* Entry registration form */}
-                <div className="lg:col-span-1 bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                  <div className="pb-3 border-b border-slate-800/80">
-                    <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                <div className="lg:col-span-1 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                  <div className="pb-3 border-b border-slate-100">
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                       <span>📝 Register Intern / Employee Entry</span>
                     </h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Add intern or employee details to register their verification entry and generate a QR code for their physical certificate.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Add intern or employee details to register their verification entry and generate a QR code for their physical certificate.</p>
                   </div>
 
-                  <form onSubmit={handleCreateCertificateSubmit} className="space-y-3.5 text-xs text-slate-350">
+                  <form onSubmit={handleCreateCertificateSubmit} className="space-y-3.5 text-xs text-slate-700">
                     {certFormError && (
-                      <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold">
+                      <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
                         {certFormError}
                       </div>
                     )}
                     {certFormSuccess && (
-                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-semibold">
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
                         {certFormSuccess}
                       </div>
                     )}
 
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
                           Certificate UID (Optional)
                         </label>
-                        <span className="text-[9px] text-emerald-400 font-semibold">Auto-generates if blank</span>
+                        <span className="text-[9px] text-[#059669] font-semibold">Auto-generates if blank</span>
                       </div>
                       <input
                         type="text"
                         placeholder="e.g. EVG-INT-2026-4745180"
                         value={newCertUid}
                         onChange={(e) => setNewCertUid(e.target.value.toUpperCase())}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 font-mono text-xs focus:outline-none focus:border-emerald-500 placeholder:font-sans placeholder:text-slate-600 tracking-wider uppercase"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[#059669] font-mono text-xs focus:outline-none focus:border-emerald-500 focus:bg-white placeholder:font-sans placeholder:text-slate-400 tracking-wider uppercase font-semibold"
                       />
-                      <p className="text-[9px] text-slate-500">Leave blank to auto-create standard UID (e.g. EVG-INT-2026-XXXX).</p>
+                      <p className="text-[9px] text-slate-400">Leave blank to auto-create standard UID (e.g. EVG-INT-2026-XXXX).</p>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Full Name of Employee/Intern *</label>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Full Name of Employee/Intern *</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Rajesh Kumar"
                         value={newCertName}
                         onChange={(e) => setNewCertName(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificate Category *</label>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Certificate Category *</label>
                       <select
                         value={newCertType}
                         onChange={(e) => setNewCertType(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 animate-none"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       >
                         <option value="INTERNSHIP">Internship Certificate</option>
                         <option value="EXPERIENCE">Experience Certificate</option>
@@ -4004,59 +4226,59 @@ export default function AdminDashboardPage() {
                             placeholder="e.g. APPRENTICESHIP, FELLOWSHIP, RECOGNITION"
                             value={customCertType}
                             onChange={(e) => setCustomCertType(e.target.value)}
-                            className="w-full bg-slate-900 border border-emerald-500/60 rounded-xl px-3 py-2 text-emerald-300 placeholder:text-slate-500 text-xs font-semibold focus:outline-none focus:border-emerald-400 shadow-sm"
+                            className="w-full bg-slate-50 border border-emerald-500 rounded-xl px-3 py-2 text-[#059669] placeholder:text-slate-400 text-xs font-semibold focus:outline-none focus:bg-white shadow-sm"
                           />
-                          <p className="text-[10px] text-emerald-400/80 mt-1 font-medium">Specify any custom category for this verification entry.</p>
+                          <p className="text-[10px] text-[#059669] mt-1 font-medium">Specify any custom category for this verification entry.</p>
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role / Designation *</label>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Role / Designation *</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Web Development & Social Media Intern"
                         value={newCertRole}
                         onChange={(e) => setNewCertRole(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Start Date *</label>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Start Date *</label>
                         <input
                           type="date"
                           required
                           max={todayStr}
                           value={newCertStartDate}
                           onChange={(e) => setNewCertStartDate(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">End Date *</label>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">End Date *</label>
                         <input
                           type="date"
                           required
                           max={todayStr}
                           value={newCertEndDate}
                           onChange={(e) => setNewCertEndDate(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Issue Date *</label>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Issue Date *</label>
                       <input
                         type="date"
                         required
                         max={todayStr}
                         value={newCertIssueDate}
                         onChange={(e) => setNewCertIssueDate(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
 
@@ -4064,7 +4286,7 @@ export default function AdminDashboardPage() {
                       <button
                         type="submit"
                         disabled={certFormLoading}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-2"
+                        className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs py-2.5 rounded-xl transition-all disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
                       >
                         <span>{certFormLoading ? 'Registering...' : 'Save Record & Generate QR'}</span>
                       </button>
@@ -4073,49 +4295,49 @@ export default function AdminDashboardPage() {
                 </div>
 
                 {/* Verification Records & QR Registry */}
-                <div className="lg:col-span-2 bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4 font-sans">
-                  <div className="pb-3.5 border-b border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4 font-sans">
+                  <div className="pb-3.5 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-xs font-extrabold text-slate-100 uppercase tracking-widest flex items-center gap-2">
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                         <span>Official Certificate Verification Registry</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-1">Immutable official audit database and QR asset management.</p>
+                      <p className="text-[10px] text-slate-500 mt-1">Immutable official audit database and QR asset management.</p>
                     </div>
 
                     {/* Formal From Date to To Date Range Filter */}
-                    <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
+                    <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
                       <div className="flex items-center gap-1.5 px-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">From:</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">From:</span>
                         <input
                           type="date"
                           max={todayStr}
                           value={filterFromDate}
                           onChange={(e) => setFilterFromDate(e.target.value)}
-                          className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                          className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-xs focus:outline-none focus:border-emerald-500 font-mono"
                         />
                       </div>
                       <div className="flex items-center gap-1.5 px-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">To:</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">To:</span>
                         <input
                           type="date"
                           max={todayStr}
                           value={filterToDate}
                           onChange={(e) => setFilterToDate(e.target.value)}
-                          className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                          className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-xs focus:outline-none focus:border-emerald-500 font-mono"
                         />
                       </div>
                       <div className="flex items-center gap-1 pl-1">
                         <button
                           type="button"
                           onClick={() => { setFilterFromDate(todayStr); setFilterToDate(todayStr); }}
-                          className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${filterFromDate === todayStr && filterToDate === todayStr ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${filterFromDate === todayStr && filterToDate === todayStr ? 'bg-[#059669] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
                           Today
                         </button>
                         <button
                           type="button"
                           onClick={() => { setFilterFromDate(''); setFilterToDate(''); }}
-                          className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${!filterFromDate && !filterToDate ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${!filterFromDate && !filterToDate ? 'bg-[#059669] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                         >
                           All Records
                         </button>
@@ -4130,7 +4352,7 @@ export default function AdminDashboardPage() {
                               showCorporateToast('error', 'Sync Failed', err.message || 'Unable to sync database.');
                             }
                           }}
-                          className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all flex items-center gap-1"
+                          className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-50 text-[#059669] border border-emerald-200 hover:bg-emerald-100 transition-all flex items-center gap-1"
                           title="Fetch latest certificate records from PostgreSQL database"
                         >
                           <span>↻</span>
@@ -4151,7 +4373,7 @@ export default function AdminDashboardPage() {
                       return true;
                     }
                   }).length === 0 ? (
-                    <div className="py-12 text-center text-xs text-slate-500 border border-dashed border-slate-850 rounded-2xl bg-slate-900/10">
+                    <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
                       {filterFromDate === todayStr && filterToDate === todayStr
                         ? "No verification records registered today. Register an entry using the form on the left."
                         : (filterFromDate || filterToDate)
@@ -4162,7 +4384,7 @@ export default function AdminDashboardPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                          <tr className="border-b border-slate-800 text-slate-400 uppercase font-extrabold text-[10px] tracking-wider">
+                          <tr className="border-b border-slate-200 text-slate-500 uppercase font-extrabold text-[10px] tracking-wider bg-slate-50/50">
                             <th className="py-3 px-4">QR Asset</th>
                             <th className="py-3 px-4">UID & Recipient</th>
                             <th className="py-3 px-4">Category & Role</th>
@@ -4170,7 +4392,7 @@ export default function AdminDashboardPage() {
                             <th className="py-3 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-850/60 text-slate-300">
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
                           {certificates
                             .filter((cert) => {
                               if (!filterFromDate && !filterToDate) return true;
@@ -4184,9 +4406,9 @@ export default function AdminDashboardPage() {
                               }
                             })
                             .map((cert) => (
-                            <tr key={cert.id} className="hover:bg-slate-900/20">
+                            <tr key={cert.id} className="hover:bg-slate-50/80">
                               <td className="py-3 px-4">
-                                <div className="relative w-12 h-12 flex items-center justify-center bg-white p-1 rounded-lg border border-slate-700 shadow-sm overflow-hidden group">
+                                <div className="relative w-12 h-12 flex items-center justify-center bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-hidden group">
                                   <img
                                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=H&data=${encodeURIComponent(`https://ecofone.co.in/verify-certificate/${cert.uid}`)}`}
                                     alt="Verification QR"
@@ -4200,23 +4422,23 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td className="py-3 px-4">
-                                <span className="font-mono text-emerald-400 font-bold block">{cert.uid}</span>
-                                <span className="font-extrabold text-slate-100 block text-sm mt-0.5 uppercase tracking-wide">{cert.recipientName?.toUpperCase()}</span>
+                                <span className="font-mono text-[#059669] font-bold block">{cert.uid}</span>
+                                <span className="font-extrabold text-slate-900 block text-sm mt-0.5 uppercase tracking-wide">{cert.recipientName?.toUpperCase()}</span>
                               </td>
                               <td className="py-3 px-4">
-                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded uppercase tracking-wide">
+                                <span className="text-[9px] font-bold text-[#059669] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wide">
                                   {cert.type}
                                 </span>
-                                <span className="text-slate-300 font-medium block mt-1">{cert.role}</span>
+                                <span className="text-slate-600 font-medium block mt-1">{cert.role}</span>
                               </td>
-                              <td className="py-3 px-4 text-slate-400 font-medium font-mono text-xs">
+                              <td className="py-3 px-4 text-slate-500 font-medium font-mono text-xs">
                                 {new Date(cert.issueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <div className="flex flex-col items-end gap-1.5 w-36 ml-auto">
                                   <button
                                     onClick={() => handleDownloadQrCode(cert.uid)}
-                                    className="w-full px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold text-[11px] rounded-lg border border-slate-700 hover:border-slate-600 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                    className="w-full px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-[11px] rounded-lg border border-slate-200 transition-all flex items-center justify-center gap-1.5 shadow-sm"
                                   >
                                     <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -4227,9 +4449,9 @@ export default function AdminDashboardPage() {
                                     href={`/verify-certificate/${cert.uid}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="w-full px-3 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-[11px] rounded-lg border border-emerald-500/30 hover:border-emerald-500/60 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                    className="w-full px-3 py-1.5 bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#059669] font-semibold text-[11px] rounded-lg border border-[#a7f3d0] transition-all flex items-center justify-center gap-1.5 shadow-sm"
                                   >
-                                    <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-3.5 h-3.5 text-[#059669]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
@@ -4269,120 +4491,120 @@ export default function AdminDashboardPage() {
             {activeTab === 'services' && (
               <div className="space-y-6">
                 {/* Header Info */}
-                <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-sm font-extrabold text-white uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-widest flex items-center gap-2">
                       <span>💼 Revenue Streamdesk & Services CMS</span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Manage headline text, trust guarantee cards, 3 service channels (Buy, Sell, Repair), taglines, and links rendered on the homepage.
                     </p>
                   </div>
                   <button
                     onClick={() => handleSaveServicesSubmit()}
                     disabled={servicesSaving}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl transition-all shadow-lg flex items-center gap-2 self-start md:self-auto shrink-0 cursor-pointer"
+                    className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-semibold text-xs px-6 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 self-start md:self-auto shrink-0 cursor-pointer"
                   >
                     <span>{servicesSaving ? 'Saving...' : '💾 Save Changes Live'}</span>
                   </button>
                 </div>
 
                 {servicesError && (
-                  <div className="p-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-2xl text-xs font-bold">
+                  <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
                     {servicesError}
                   </div>
                 )}
                 {servicesSuccess && (
-                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-xs font-bold">
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
                     {servicesSuccess}
                   </div>
                 )}
 
-                <form onSubmit={handleSaveServicesSubmit} className="space-y-6 text-xs text-slate-300">
+                <form onSubmit={handleSaveServicesSubmit} className="space-y-6 text-xs text-slate-700">
                   
                   {/* Block 1: Main Section Headers */}
-                  <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-4">
-                    <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider border-b border-slate-800/80 pb-2">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
                       1. Section Heading & Subtitles
                     </h4>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Badge Tag</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Badge Tag</label>
                         <input
                           type="text"
                           value={servicesData.tag}
                           onChange={(e) => setServicesData({ ...servicesData, tag: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Title Prefix</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title Prefix</label>
                         <input
                           type="text"
                           value={servicesData.titlePrefix}
                           onChange={(e) => setServicesData({ ...servicesData, titlePrefix: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Buy Highlight Word</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Buy Highlight Word</label>
                         <input
                           type="text"
                           value={servicesData.buyText}
                           onChange={(e) => setServicesData({ ...servicesData, buyText: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-orange-400 font-bold"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[#ea580c] font-bold focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Sell Highlight Word</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sell Highlight Word</label>
                         <input
                           type="text"
                           value={servicesData.sellText}
                           onChange={(e) => setServicesData({ ...servicesData, sellText: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-orange-400 font-bold"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[#ea580c] font-bold focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Repair Highlight Word</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Repair Highlight Word</label>
                         <input
                           type="text"
                           value={servicesData.repairText}
                           onChange={(e) => setServicesData({ ...servicesData, repairText: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-orange-400 font-bold"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[#ea580c] font-bold focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Title Suffix</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title Suffix</label>
                         <input
                           type="text"
                           value={servicesData.titleSuffix}
                           onChange={(e) => setServicesData({ ...servicesData, titleSuffix: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subtitle (Line 1)</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Subtitle (Line 1)</label>
                         <input
                           type="text"
                           value={servicesData.subtitleLine1}
                           onChange={(e) => setServicesData({ ...servicesData, subtitleLine1: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subtitle (Line 2)</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Subtitle (Line 2)</label>
                         <input
                           type="text"
                           value={servicesData.subtitleLine2}
                           onChange={(e) => setServicesData({ ...servicesData, subtitleLine2: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
@@ -4391,12 +4613,12 @@ export default function AdminDashboardPage() {
                   {/* Block 2: Trust Guarantee Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Warranty Card */}
-                    <div className="bg-[#111827]/80 border border-emerald-500/20 rounded-3xl p-6 shadow-xl space-y-3">
-                      <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
+                    <div className="bg-emerald-50/40 border border-emerald-200/80 rounded-2xl p-6 shadow-sm space-y-3">
+                      <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider border-b border-emerald-100 pb-2 flex items-center gap-2">
                         <span>🛡️ Card 1: Official Guarantee</span>
                       </h4>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tag</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tag</label>
                         <input
                           type="text"
                           value={servicesData.warrantyCard?.tag}
@@ -4404,11 +4626,11 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             warrantyCard: { ...servicesData.warrantyCard, tag: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400"
+                          className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 text-emerald-700 font-semibold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
                         <input
                           type="text"
                           value={servicesData.warrantyCard?.title}
@@ -4416,11 +4638,11 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             warrantyCard: { ...servicesData.warrantyCard, title: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+                          className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
                         <textarea
                           rows={3}
                           value={servicesData.warrantyCard?.description}
@@ -4428,18 +4650,18 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             warrantyCard: { ...servicesData.warrantyCard, description: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300"
+                          className="w-full bg-white border border-emerald-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
 
                     {/* Replacement Card */}
-                    <div className="bg-[#111827]/80 border border-orange-500/20 rounded-3xl p-6 shadow-xl space-y-3">
-                      <h4 className="text-xs font-black text-orange-400 uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
+                    <div className="bg-orange-50/40 border border-orange-200/80 rounded-2xl p-6 shadow-sm space-y-3">
+                      <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider border-b border-orange-100 pb-2 flex items-center gap-2">
                         <span>🔄 Card 2: No-Risk Trial</span>
                       </h4>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tag</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tag</label>
                         <input
                           type="text"
                           value={servicesData.replacementCard?.tag}
@@ -4447,11 +4669,11 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             replacementCard: { ...servicesData.replacementCard, tag: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-orange-400"
+                          className="w-full bg-white border border-orange-200 rounded-xl px-3 py-2 text-[#ea580c] font-semibold focus:outline-none focus:border-orange-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
                         <input
                           type="text"
                           value={servicesData.replacementCard?.title}
@@ -4459,11 +4681,11 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             replacementCard: { ...servicesData.replacementCard, title: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold"
+                          className="w-full bg-white border border-orange-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-orange-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
                         <textarea
                           rows={3}
                           value={servicesData.replacementCard?.description}
@@ -4471,7 +4693,7 @@ export default function AdminDashboardPage() {
                             ...servicesData,
                             replacementCard: { ...servicesData.replacementCard, description: e.target.value }
                           })}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300"
+                          className="w-full bg-white border border-orange-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-orange-500"
                         />
                       </div>
                     </div>
@@ -4479,22 +4701,22 @@ export default function AdminDashboardPage() {
 
                   {/* Block 3: 3 Service Channels */}
                   <div className="space-y-4">
-                    <h4 className="text-xs font-black text-slate-200 uppercase tracking-wider">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                       3. Service Channels (Buy, Sell, Repair)
                     </h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {servicesData.serviceCards?.map((card: any, idx: number) => (
-                        <div key={card.id || idx} className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-3">
-                          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                            <span className="font-extrabold text-xs text-white">Channel {card.number}</span>
-                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${card.theme === 'orange' ? 'bg-orange-500/20 text-orange-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                        <div key={card.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span className="font-extrabold text-xs text-slate-900">Channel {card.number}</span>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${card.theme === 'orange' ? 'bg-orange-50 text-[#ea580c] border border-orange-200' : 'bg-emerald-50 text-[#059669] border border-emerald-200'}`}>
                               {card.theme}
                             </span>
                           </div>
 
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Title</label>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Title</label>
                             <input
                               type="text"
                               value={card.title}
@@ -4503,12 +4725,12 @@ export default function AdminDashboardPage() {
                                 copy[idx].title = e.target.value;
                                 setServicesData({ ...servicesData, serviceCards: copy });
                               }}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-bold text-xs"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tagline</label>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tagline</label>
                             <input
                               type="text"
                               value={card.tagline}
@@ -4517,12 +4739,12 @@ export default function AdminDashboardPage() {
                                 copy[idx].tagline = e.target.value;
                                 setServicesData({ ...servicesData, serviceCards: copy });
                               }}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 text-[11px] uppercase tracking-wider"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-500 text-[11px] uppercase tracking-wider focus:bg-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
 
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
                             <textarea
                               rows={3}
                               value={card.description}
@@ -4531,13 +4753,13 @@ export default function AdminDashboardPage() {
                                 copy[idx].description = e.target.value;
                                 setServicesData({ ...servicesData, serviceCards: copy });
                               }}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-300 text-xs"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Link Text</label>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Link Text</label>
                               <input
                                 type="text"
                                 value={card.linkText}
@@ -4546,11 +4768,11 @@ export default function AdminDashboardPage() {
                                   copy[idx].linkText = e.target.value;
                                   setServicesData({ ...servicesData, serviceCards: copy });
                                 }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Link URL</label>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Link URL</label>
                               <input
                                 type="text"
                                 value={card.linkUrl}
@@ -4559,7 +4781,7 @@ export default function AdminDashboardPage() {
                                   copy[idx].linkUrl = e.target.value;
                                   setServicesData({ ...servicesData, serviceCards: copy });
                                 }}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
                               />
                             </div>
                           </div>
@@ -4569,17 +4791,17 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* Block 4: Bottom Tag */}
-                  <div className="bg-[#111827]/80 border border-slate-800/80 rounded-3xl p-6 shadow-xl space-y-3">
-                    <h4 className="text-xs font-black text-slate-200 uppercase tracking-wider border-b border-slate-800/80 pb-2">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-3">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
                       4. Bottom Tag
                     </h4>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Footer Tagline</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Footer Tagline</label>
                       <input
                         type="text"
                         value={servicesData.footerTag}
                         onChange={(e) => setServicesData({ ...servicesData, footerTag: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                   </div>
@@ -4588,7 +4810,7 @@ export default function AdminDashboardPage() {
                     <button
                       type="submit"
                       disabled={servicesSaving}
-                      className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs px-8 py-3.5 rounded-xl transition-all shadow-xl cursor-pointer"
+                      className="bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-semibold text-xs px-8 py-3 rounded-xl transition-all shadow-sm cursor-pointer"
                     >
                       {servicesSaving ? 'Saving...' : '💾 Save All Changes Live'}
                     </button>
@@ -4603,21 +4825,21 @@ export default function AdminDashboardPage() {
       </main>
 
       {makeLiveStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#090D16]/75 backdrop-blur-md transition-all duration-300 p-4">
-          <div className="w-full max-w-md bg-[#111827]/95 border border-slate-800/80 rounded-3xl p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-all duration-300 p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
             <button 
               type="button" 
               onClick={() => setMakeLiveStore(null)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 text-lg transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg transition-colors"
             >
               ✕
             </button>
             <div className="space-y-1">
-              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full uppercase tracking-wider">
                 Outreach Setup
               </span>
-              <h3 className="font-display font-extrabold text-white text-base">Make {makeLiveStore.name} Live</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <h3 className="font-display font-bold text-slate-900 text-base">Make {makeLiveStore.name} Live</h3>
+              <p className="text-[11px] text-slate-500 leading-normal">
                 Please provide the contact and directions details required for customer locator cards.
               </p>
             </div>
@@ -4667,10 +4889,10 @@ export default function AdminDashboardPage() {
                   setIsLoading(false);
                 }
               }}
-              className="space-y-3.5 text-xs text-slate-300"
+              className="space-y-3.5 text-xs text-slate-700"
             >
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Address Location <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <textarea
@@ -4678,13 +4900,13 @@ export default function AdminDashboardPage() {
                   rows={2}
                   value={makeLiveAddress}
                   onChange={(e) => setMakeLiveAddress(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 resize-none"
                   placeholder="Street, City, Pin details"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Contact Phone <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
@@ -4693,13 +4915,13 @@ export default function AdminDashboardPage() {
                   maxLength={12}
                   value={makeLivePhone}
                   onChange={(e) => setMakeLivePhone(e.target.value.replace(/[^0-9+]/g, ''))}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                   placeholder="e.g. 9876543210"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Google Maps Link / URL <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
@@ -4707,13 +4929,13 @@ export default function AdminDashboardPage() {
                   required
                   value={makeLiveMapsUrl}
                   onChange={(e) => setMakeLiveMapsUrl(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                   placeholder="https://maps.app.goo.gl/..."
                 />
               </div>
 
               {makeLiveError && (
-                <div className="text-rose-400 text-[11px] font-bold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl">
+                <div className="text-rose-600 text-[11px] font-semibold bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl">
                   ⚠️ {makeLiveError}
                 </div>
               )}
@@ -4722,13 +4944,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setMakeLiveStore(null)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold py-2.5 rounded-xl transition-all"
+                  className="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold py-2.5 rounded-xl transition-all shadow-sm"
                 >
                   Make Live 🟢
                 </button>
@@ -4739,28 +4961,28 @@ export default function AdminDashboardPage() {
       )}
 
       {editTeamMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#090D16]/75 backdrop-blur-md transition-all duration-300 p-4">
-          <div className="w-full max-w-md bg-[#111827]/95 border border-slate-800/80 rounded-3xl p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-all duration-300 p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
             <button 
               type="button" 
               onClick={() => setEditTeamMember(null)}
-              className="absolute top-4 right-4 text-slate-500 hover:text-slate-350 text-lg transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg transition-colors"
             >
               ✕
             </button>
             <div className="space-y-1">
-              <span className="text-[10px] text-emerald-450 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full uppercase tracking-wider">
                 Staff Configuration
               </span>
-              <h3 className="font-display font-extrabold text-white text-base">Edit {editTeamMember.name} Details</h3>
-              <p className="text-[11px] text-slate-400 leading-normal">
+              <h3 className="font-display font-bold text-slate-900 text-base">Edit {editTeamMember.name} Details</h3>
+              <p className="text-[11px] text-slate-500 leading-normal">
                 Update designation and professional bio profile settings.
               </p>
             </div>
             
-            <form onSubmit={handleEditTeamMemberSubmit} className="space-y-3.5 text-xs text-slate-300">
+            <form onSubmit={handleEditTeamMemberSubmit} className="space-y-3.5 text-xs text-slate-700">
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Full Name <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
@@ -4768,12 +4990,12 @@ export default function AdminDashboardPage() {
                   required
                   value={editTeamName}
                   onChange={(e) => setEditTeamName(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Role / Designation <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
@@ -4781,12 +5003,12 @@ export default function AdminDashboardPage() {
                   required
                   value={editTeamRole}
                   onChange={(e) => setEditTeamRole(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Bio / Short Description <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <textarea
@@ -4794,22 +5016,22 @@ export default function AdminDashboardPage() {
                   rows={3}
                   value={editTeamBio}
                   onChange={(e) => setEditTeamBio(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Staff Photo Source
                 </label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
                     onClick={() => { setEditImageSourceType('upload'); setEditTeamImageUrl(''); }}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all border ${
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
                       editImageSourceType === 'upload'
-                        ? 'bg-emerald-600 border-emerald-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-455'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
                     }`}
                   >
                     Upload File
@@ -4817,10 +5039,10 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => { setEditImageSourceType('url'); setEditTeamImageUrl(''); }}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all border ${
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
                       editImageSourceType === 'url'
-                        ? 'bg-emerald-600 border-emerald-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-455'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-slate-100 border-slate-200 text-slate-600'
                     }`}
                   >
                     Image URL
@@ -4829,7 +5051,7 @@ export default function AdminDashboardPage() {
 
                 {editImageSourceType === 'upload' ? (
                   <div className="space-y-2">
-                    <div className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all relative bg-[#1F2937]/20">
+                    <div className="border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-all relative bg-slate-50">
                       <input
                         type="file"
                         accept="image/*"
@@ -4838,20 +5060,20 @@ export default function AdminDashboardPage() {
                       />
                       <div className="space-y-1.5">
                         <span className="text-xl block">📷</span>
-                        <span className="text-[10px] font-bold text-slate-350 block">Click or Drag Portrait Photo</span>
-                        <span className="text-[8px] text-slate-500 block">PNG, JPG, or WEBP (Max 2MB)</span>
+                        <span className="text-[10px] font-bold text-slate-600 block">Click or Drag Portrait Photo</span>
+                        <span className="text-[8px] text-slate-400 block">PNG, JPG, or WEBP (Max 2MB)</span>
                       </div>
                     </div>
                     {editTeamImageUrl && editTeamImageUrl.startsWith('data:') && (
-                      <div className="flex items-center justify-between bg-slate-900/40 p-2 rounded-xl border border-slate-800">
+                      <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-200">
                         <div className="flex items-center gap-2">
-                          <img src={editTeamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-750" />
-                          <span className="text-[9px] text-emerald-400 font-extrabold uppercase">Photo Loaded</span>
+                          <img src={editTeamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200" />
+                          <span className="text-[9px] text-emerald-700 font-bold uppercase">Photo Loaded</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setEditTeamImageUrl('')}
-                          className="text-[10px] text-rose-400 hover:text-rose-350 font-bold px-2 py-1"
+                          className="text-[10px] text-rose-600 hover:text-rose-700 font-semibold px-2 py-1"
                         >
                           Remove
                         </button>
@@ -4865,12 +5087,12 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. https://images.unsplash.com/..."
                       value={editTeamImageUrl}
                       onChange={(e) => setEditTeamImageUrl(e.target.value)}
-                      className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                     />
                     {editTeamImageUrl && (
-                      <div className="mt-2 p-2 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2">
-                        <img src={editTeamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-750" onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
-                        <span className="text-[9px] text-slate-400">External URL Preview</span>
+                      <div className="mt-2 p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2">
+                        <img src={editTeamImageUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-slate-200" onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
+                        <span className="text-[9px] text-slate-500">External URL Preview</span>
                       </div>
                     )}
                   </div>
@@ -4878,7 +5100,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   LinkedIn Profile URL (Optional)
                 </label>
                 <input
@@ -4886,12 +5108,12 @@ export default function AdminDashboardPage() {
                   placeholder="https://linkedin.com/in/username"
                   value={editTeamLinkedin}
                   onChange={(e) => setEditTeamLinkedin(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   Twitter / X Profile URL (Optional)
                 </label>
                 <input
@@ -4899,12 +5121,12 @@ export default function AdminDashboardPage() {
                   placeholder="https://twitter.com/username"
                   value={editTeamTwitter}
                   onChange={(e) => setEditTeamTwitter(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1 text-[10px] uppercase tracking-wider">
+                <label className="block text-slate-600 font-semibold mb-1 text-[10px] uppercase tracking-wider">
                   GitHub Profile URL (Optional)
                 </label>
                 <input
@@ -4912,12 +5134,12 @@ export default function AdminDashboardPage() {
                   placeholder="https://github.com/username"
                   value={editTeamGithub}
                   onChange={(e) => setEditTeamGithub(e.target.value)}
-                  className="w-full bg-[#1F2937]/50 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {editTeamError && (
-                <div className="text-rose-400 text-[11px] font-bold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl">
+                <div className="text-rose-600 text-[11px] font-semibold bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl">
                   ⚠️ {editTeamError}
                 </div>
               )}
@@ -4926,13 +5148,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setEditTeamMember(null)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold py-2.5 rounded-xl transition-all"
+                  className="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold py-2.5 rounded-xl transition-all shadow-sm"
                 >
                   Save Changes
                 </button>
@@ -4944,30 +5166,30 @@ export default function AdminDashboardPage() {
 
       {/* G. CLEAR ENQUIRIES CUSTOM MODAL (DROPDOWN AGE FILTER) */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span>🧹 Clear {deleteModalType === 'franchise' ? 'Franchise Leads' : 'Support Tickets'}</span>
               </h3>
               <button 
                 onClick={() => setDeleteModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Select the age range of the records you want to delete. This operation cannot be undone.
             </p>
 
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Select Filter Range</label>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">Select Filter Range</label>
               <select
                 value={deleteModalFilter}
                 onChange={(e: any) => setDeleteModalFilter(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-red-500 transition-colors"
               >
                 <option value="1month">Older than 1 Month</option>
                 <option value="3months">Older than 3 Months</option>
@@ -4980,24 +5202,24 @@ export default function AdminDashboardPage() {
             {deleteModalFilter === 'custom' && (
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase">Start Date</label>
                   <input
                     type="date"
                     max={new Date().toISOString().split('T')[0]}
                     value={deleteStartDate}
                     onChange={(e) => setDeleteStartDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-850 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-red-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase">End Date</label>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase">End Date</label>
                   <input
                     type="date"
                     min={deleteStartDate || undefined}
                     max={new Date().toISOString().split('T')[0]}
                     value={deleteEndDate}
                     onChange={(e) => setDeleteEndDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-850 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-red-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
@@ -5006,13 +5228,13 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setDeleteModalOpen(false)}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDeleteLeads}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg shadow-red-600/10"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
               >
                 Wipe History
               </button>
@@ -5023,29 +5245,29 @@ export default function AdminDashboardPage() {
 
       {/* H. EDIT SUB-ADMIN ACCESS PERMISSIONS CUSTOM MODAL */}
       {editSubAdminOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                 🔑 Edit Access: {editSubAdminName}
               </h3>
               <button 
                 onClick={() => { setEditSubAdminOpen(false); setEditAccessPassword(''); setEditAccessPasswordError(''); }}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Select the administrative sections that this sub-admin is authorized to view and manage.
             </p>
 
             <form onSubmit={handleUpdateSubAdminPermissionsSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Granted Access Levels</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-200">
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Granted Access Levels</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('franchise')}
@@ -5056,12 +5278,12 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'franchise'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Franchise Registry</span>
                   </label>
 
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('contact')}
@@ -5072,12 +5294,12 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'contact'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Customer Queries</span>
                   </label>
 
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('stores')}
@@ -5088,12 +5310,12 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'stores'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Outlets Map</span>
                   </label>
 
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('team')}
@@ -5104,12 +5326,12 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'team'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Team Management</span>
                   </label>
 
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('reviews')}
@@ -5120,12 +5342,12 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'reviews'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Review Moderation</span>
                   </label>
 
-                  <label className="flex items-center gap-2 bg-slate-900/50 hover:bg-slate-900 border border-slate-800 rounded-xl p-2.5 cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-2.5 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={editSubAdminPermissions.includes('certificates')}
@@ -5136,7 +5358,7 @@ export default function AdminDashboardPage() {
                           setEditSubAdminPermissions((prev) => prev.filter((p) => p !== 'certificates'));
                         }
                       }}
-                      className="accent-emerald-500"
+                      className="accent-[#059669]"
                     />
                     <span>Verification Records</span>
                   </label>
@@ -5147,31 +5369,31 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setEditSubAdminOpen(false); setEditAccessPassword(''); setEditAccessPasswordError(''); }}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/10"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
                 >
                   Save Access
                 </button>
               </div>
 
               {/* Master Admin Password Authorization */}
-              <div className="border-t border-slate-800 pt-4 space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Confirm with Master Admin Password</label>
+              <div className="border-t border-slate-150 pt-4 space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Confirm with Master Admin Password</label>
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={editAccessPassword}
                   onChange={(e) => { setEditAccessPassword(e.target.value); setEditAccessPasswordError(''); }}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
                 {editAccessPasswordError && (
-                  <div className="text-rose-400 text-[10px] font-bold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                  <div className="text-rose-600 text-[10px] font-semibold bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl flex items-center gap-2">
                     <span>⚠️</span><span>{editAccessPasswordError}</span>
                   </div>
                 )}
@@ -5183,51 +5405,51 @@ export default function AdminDashboardPage() {
 
       {/* I. RESET SUB-ADMIN PASSWORD CUSTOM MODAL */}
       {resetSubAdminOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span>🔒 Reset Password: {resetSubAdminName}</span>
               </h3>
               <button 
                 onClick={() => setResetSubAdminOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Enter your Master Admin password to authorize and enter a new password for the sub-admin.
             </p>
 
-            <form onSubmit={handleConfirmSubAdminResetSubmit} className="space-y-3.5 text-xs text-slate-350">
+            <form onSubmit={handleConfirmSubAdminResetSubmit} className="space-y-3.5 text-xs text-slate-700">
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">YOUR Master Admin Password</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">YOUR Master Admin Password</label>
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={resetAdminPassword}
                   onChange={(e) => setResetAdminPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sub-Admin New Password</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Sub-Admin New Password</label>
                 <input
                   type="password"
                   required
                   placeholder="•••••••• (Min 6 chars)"
                   value={resetNewPassword}
                   onChange={(e) => setResetNewPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               {resetPasswordError && (
-                <div className="text-rose-400 text-[10px] font-bold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                <div className="text-rose-600 text-[10px] font-semibold bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl flex items-center gap-2">
                   <span>⚠️</span>
                   <span>{resetPasswordError}</span>
                 </div>
@@ -5237,13 +5459,13 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setResetSubAdminOpen(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/10"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
                 >
                   Confirm Reset
                 </button>
@@ -5253,27 +5475,27 @@ export default function AdminDashboardPage() {
         </div>
       )}
       {revokeConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span>🚫 Revoke Access: {revokeTargetName}</span>
               </h3>
               <button
                 onClick={() => setRevokeConfirmOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              This will permanently revoke <span className="text-white font-bold">{revokeTargetName}</span>'s admin access. Both passwords are required to confirm.
+            <p className="text-xs text-slate-500 leading-relaxed">
+              This will permanently revoke <span className="text-slate-900 font-bold">{revokeTargetName}</span>'s admin access. Both passwords are required to confirm.
             </p>
 
             <form onSubmit={handleConfirmRevoke} className="space-y-3.5 text-xs">
               <div className="space-y-1">
-                <label className={`block text-[10px] font-bold uppercase tracking-wider ${revokeErrorField === 'master' ? 'text-rose-400' : 'text-slate-400'}`}>Master Admin Password</label>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider ${revokeErrorField === 'master' ? 'text-rose-600' : 'text-slate-600'}`}>Master Admin Password</label>
                 <input
                   type="password"
                   required
@@ -5281,28 +5503,28 @@ export default function AdminDashboardPage() {
                   placeholder="••••••••"
                   value={revokePasswordInput}
                   onChange={(e) => { setRevokePasswordInput(e.target.value); setRevokePasswordError(''); setRevokeErrorField(null); }}
-                  className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-slate-200 focus:outline-none transition-colors ${
-                    revokeErrorField === 'master' ? 'border-rose-500 bg-rose-500/5' : 'border-slate-800 focus:border-rose-500'
+                  className={`w-full bg-slate-50 border rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition-colors ${
+                    revokeErrorField === 'master' ? 'border-rose-500 bg-rose-50/50' : 'border-slate-200 focus:border-rose-500'
                   }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className={`block text-[10px] font-bold uppercase tracking-wider ${revokeErrorField === 'subadmin' ? 'text-rose-400' : 'text-slate-400'}`}>Sub-Admin Password ({revokeTargetName})</label>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider ${revokeErrorField === 'subadmin' ? 'text-rose-600' : 'text-slate-600'}`}>Sub-Admin Password ({revokeTargetName})</label>
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={revokeSubAdminPasswordInput}
                   onChange={(e) => { setRevokeSubAdminPasswordInput(e.target.value); setRevokePasswordError(''); setRevokeErrorField(null); }}
-                  className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-slate-200 focus:outline-none transition-colors ${
-                    revokeErrorField === 'subadmin' ? 'border-rose-500 bg-rose-500/5' : 'border-slate-800 focus:border-rose-500'
+                  className={`w-full bg-slate-50 border rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition-colors ${
+                    revokeErrorField === 'subadmin' ? 'border-rose-500 bg-rose-50/50' : 'border-slate-200 focus:border-rose-500'
                   }`}
                 />
               </div>
 
               {revokePasswordError && (
-                <div className="text-rose-400 text-[10px] font-bold bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                <div className="text-rose-600 text-[10px] font-semibold bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl flex items-center gap-2">
                   <span>⚠️</span>
                   <span>{revokePasswordError}</span>
                 </div>
@@ -5312,14 +5534,14 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setRevokeConfirmOpen(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isRevoking}
-                  className="flex-1 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg shadow-rose-600/20"
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
                 >
                   {isRevoking ? 'Revoking...' : 'Confirm Revoke'}
                 </button>
@@ -5331,43 +5553,43 @@ export default function AdminDashboardPage() {
 
       {/* J. CREATE BUSINESS OWNER REVIEW MODAL */}
       {ownerReviewOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span>🏢 Write Business Owner Review</span>
               </h3>
               <button 
                 onClick={() => setOwnerReviewOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Post an official review or statement as a Store Owner / Franchise Partner. This review will be tagged with <strong className="text-emerald-400">🏢 Verified Business Owner</strong> on the live storefront.
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Post an official review or statement as a Store Owner / Franchise Partner. This review will be tagged with <strong className="text-emerald-600">🏢 Verified Business Owner</strong> on the live storefront.
             </p>
 
-            <form onSubmit={handleCreateOwnerReviewSubmit} className="space-y-3.5 text-xs text-slate-300">
+            <form onSubmit={handleCreateOwnerReviewSubmit} className="space-y-3.5 text-xs text-slate-700">
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Owner / Franchise Name</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Owner / Franchise Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. EcoFone Lucknow Store Owner"
                   value={ownerAuthorName}
                   onChange={(e) => setOwnerAuthorName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Type</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Review Type</label>
                 <select
                   value={ownerType}
                   onChange={(e) => setOwnerType(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="INVESTOR">Investor / Partner</option>
                   <option value="CUSTOMER">Customer / End User</option>
@@ -5375,19 +5597,19 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Subtitle / Tag</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Subtitle / Tag</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Franchise Partner, Lucknow OR Verified Purchase"
                   value={ownerRole}
                   onChange={(e) => setOwnerRole(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Star Rating (1 to 5)</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Star Rating (1 to 5)</label>
                 <div className="flex items-center gap-1.5 py-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -5396,22 +5618,22 @@ export default function AdminDashboardPage() {
                       onClick={() => setOwnerRating(star)}
                       className="text-xl focus:outline-none transition-transform hover:scale-125"
                     >
-                      <span className={star <= ownerRating ? 'text-amber-400' : 'text-slate-700'}>★</span>
+                      <span className={star <= ownerRating ? 'text-amber-400' : 'text-slate-300'}>★</span>
                     </button>
                   ))}
-                  <span className="text-xs text-amber-400 font-bold ml-2">{ownerRating} / 5 Stars</span>
+                  <span className="text-xs text-amber-500 font-bold ml-2">{ownerRating} / 5 Stars</span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Content / Message</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Review Content / Message</label>
                 <textarea
                   required
                   rows={4}
                   placeholder="Write your review or owner statement to display on the storefront..."
                   value={ownerComment}
                   onChange={(e) => setOwnerComment(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
                 />
               </div>
 
@@ -5419,14 +5641,14 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setOwnerReviewOpen(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingOwnerReview}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-600/10"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
                 >
                   {isSubmittingOwnerReview ? 'Publishing...' : 'Publish Business Review'}
                 </button>
@@ -5438,46 +5660,46 @@ export default function AdminDashboardPage() {
 
       {/* K. EDIT CLIENT REVIEW MODAL */}
       {editReviewOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#111827] border border-slate-800 rounded-3xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span>✏️ Edit Customer Review</span>
               </h3>
               <button 
                 onClick={() => { setEditReviewOpen(false); setEditingReviewId(null); }}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <form onSubmit={handleEditReviewSubmit} className="space-y-3.5 text-xs text-slate-300">
+            <form onSubmit={handleEditReviewSubmit} className="space-y-3.5 text-xs text-slate-700">
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Author Name</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Author Name</label>
                 <input
                   type="text"
                   required
                   placeholder="Author name"
                   value={editAuthorName}
                   onChange={(e) => setEditAuthorName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Product / Tag</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Product / Tag</label>
                 <input
                   type="text"
                   placeholder="e.g. iPhone 13 Pro Refurbished"
                   value={editVerifiedProduct}
                   onChange={(e) => setEditVerifiedProduct(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Star Rating (1 to 5)</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Star Rating (1 to 5)</label>
                 <div className="flex items-center gap-1.5 py-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -5486,22 +5708,22 @@ export default function AdminDashboardPage() {
                       onClick={() => setEditRating(star)}
                       className="text-xl focus:outline-none transition-transform hover:scale-125"
                     >
-                      <span className={star <= editRating ? 'text-amber-400' : 'text-slate-700'}>★</span>
+                      <span className={star <= editRating ? 'text-amber-400' : 'text-slate-300'}>★</span>
                     </button>
                   ))}
-                  <span className="text-xs text-amber-400 font-bold ml-2">{editRating} / 5 Stars</span>
+                  <span className="text-xs text-amber-500 font-bold ml-2">{editRating} / 5 Stars</span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Review Comment</label>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">Review Comment</label>
                 <textarea
                   required
                   rows={4}
                   placeholder="Review content..."
                   value={editComment}
                   onChange={(e) => setEditComment(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
                 />
               </div>
 
@@ -5509,14 +5731,14 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setEditReviewOpen(false); setEditingReviewId(null); }}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 rounded-xl transition-colors border border-slate-750"
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors border border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdatingReview}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs py-2.5 rounded-xl transition-colors shadow-lg"
+                  className="flex-1 bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-sm"
                 >
                   {isUpdatingReview ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -5528,50 +5750,50 @@ export default function AdminDashboardPage() {
 
       {/* M. CUSTOM IN-APP REGISTRATION CONFIRMATION MODAL */}
       {certConfirmModalOpen && pendingCertPayload && (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#111827] border border-amber-500/30 rounded-3xl p-6 sm:p-7 w-full max-w-md shadow-2xl space-y-5 animate-scale-up text-slate-100 font-sans">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-amber-300 rounded-2xl p-6 sm:p-7 w-full max-w-md shadow-2xl space-y-5 animate-scale-up text-slate-800 font-sans">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-lg">
                   🔒
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                     Official Registration Notice
                   </h3>
-                  <p className="text-[10px] text-amber-400/90 font-medium">Ecovista Global Permanent Records</p>
+                  <p className="text-[10px] text-amber-600 font-medium">Ecovista Global Permanent Records</p>
                 </div>
               </div>
               <button
                 onClick={() => { setCertConfirmModalOpen(false); setPendingCertPayload(null); }}
-                className="text-slate-400 hover:text-white transition-colors text-sm"
+                className="text-slate-400 hover:text-slate-700 transition-colors text-sm"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 text-xs">
+            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
               <div>
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Recipient Full Name</span>
-                <span className="text-sm font-extrabold text-slate-100 uppercase tracking-wide">{pendingCertPayload.recipientName}</span>
+                <span className="text-sm font-bold text-slate-900 uppercase tracking-wide">{pendingCertPayload.recipientName}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Category</span>
-                  <span className="text-xs font-bold text-emerald-400 uppercase">{pendingCertPayload.type}</span>
+                  <span className="text-xs font-bold text-emerald-700 uppercase">{pendingCertPayload.type}</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Issue Date</span>
-                  <span className="text-xs font-semibold text-slate-300">{pendingCertPayload.issueDate}</span>
+                  <span className="text-xs font-semibold text-slate-700">{pendingCertPayload.issueDate}</span>
                 </div>
               </div>
               <div className="pt-1">
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Role / Designation</span>
-                <span className="text-xs font-medium text-slate-300">{pendingCertPayload.role}</span>
+                <span className="text-xs font-medium text-slate-700">{pendingCertPayload.role}</span>
               </div>
             </div>
 
-            <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl text-[11px] text-amber-300 leading-relaxed flex items-start gap-2.5">
+            <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-[11px] text-amber-900 leading-relaxed flex items-start gap-2.5">
               <span className="text-base leading-none">⚠️</span>
               <p>
                 <strong>Important:</strong> Once saved, this record will be <strong>permanently locked</strong> in the official database and <strong>cannot be modified or deleted</strong>.
@@ -5582,14 +5804,14 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={() => { setCertConfirmModalOpen(false); setPendingCertPayload(null); }}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-3 rounded-xl transition-all border border-slate-700"
+                className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs py-3 rounded-xl transition-all border border-slate-200"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCertificateSave}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                className="flex-1 bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 <span>Confirm & Register</span>
               </button>
@@ -5603,14 +5825,14 @@ export default function AdminDashboardPage() {
         {corporateToasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto p-4 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-start justify-between gap-3 transition-all transform animate-fade-in ${
+            className={`pointer-events-auto p-4 rounded-2xl border shadow-xl backdrop-blur-xl flex items-start justify-between gap-3 transition-all transform animate-fade-in bg-white ${
               toast.type === 'success'
-                ? 'bg-slate-900/95 border-emerald-500/40 text-slate-100 shadow-emerald-950/50'
+                ? 'border-emerald-200 text-slate-800 shadow-emerald-500/10'
                 : toast.type === 'error'
-                  ? 'bg-slate-900/95 border-rose-500/40 text-slate-100 shadow-rose-950/50'
+                  ? 'border-rose-200 text-slate-800 shadow-rose-500/10'
                   : toast.type === 'warning'
-                    ? 'bg-slate-900/95 border-amber-500/40 text-slate-100 shadow-amber-950/50'
-                    : 'bg-slate-900/95 border-sky-500/40 text-slate-100 shadow-sky-950/50'
+                    ? 'border-amber-200 text-slate-800 shadow-amber-500/10'
+                    : 'border-sky-200 text-slate-800 shadow-sky-500/10'
             }`}
           >
             <div className="flex items-start gap-3">
@@ -5618,17 +5840,17 @@ export default function AdminDashboardPage() {
                 {toast.type === 'success' ? '✓' : toast.type === 'error' ? '⚠️' : toast.type === 'warning' ? '🔒' : 'ℹ️'}
               </span>
               <div>
-                <h4 className="text-xs font-extrabold uppercase tracking-wide text-slate-200">
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-900">
                   {toast.title}
                 </h4>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   {toast.message}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setCorporateToasts(prev => prev.filter(t => t.id !== toast.id))}
-              className="text-slate-400 hover:text-slate-200 text-sm leading-none p-1"
+              className="text-slate-400 hover:text-slate-700 text-sm leading-none p-1"
             >
               ✕
             </button>

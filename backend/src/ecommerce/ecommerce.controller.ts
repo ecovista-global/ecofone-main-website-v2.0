@@ -23,14 +23,26 @@ export class CatalogFilterDto {
   grade?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsString()
+  search?: string;
+
+  @IsOptional()
   minPrice?: number;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
   maxPrice?: number;
+
+  @IsOptional()
+  page?: number;
+
+  @IsOptional()
+  limit?: number;
+
+  @IsOptional()
+  take?: number;
+
+  @IsOptional()
+  skip?: number;
 }
 
 export class CheckoutDto {

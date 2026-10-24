@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -88,10 +89,15 @@ model OtpRecord {
 model Store {
   id        String   @id @default(uuid())
   name      String
+  area      String?
+  city      String?
   address   String
+  timings   String?
   latitude  Float
   longitude Float
   phone     String
+  isOpen    Boolean  @default(true)
+  imageUrl  String?
   mapsUrl   String?
   type      String   @default("LIVE")
   ownerId   String?

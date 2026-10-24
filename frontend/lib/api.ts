@@ -1,3 +1,5 @@
+import defaultWebsiteCms from '../data/website_cms.json';
+
 const DIRECT_BACKEND_URL = 'https://nextjs-642200683.kloudbeansite.com/api/v1';
 
 function getBaseUrl(): string {
@@ -11,6 +13,16 @@ function getBaseUrl(): string {
 }
 
 const BASE_URL = getBaseUrl();
+
+export function getAdminAuthHeaders(): Record<string, string> {
+  if (typeof window !== 'undefined') {
+    const token = sessionStorage.getItem('ecofone_token') || localStorage.getItem('ecofone_token') || '';
+    if (token) {
+      return { 'Authorization': `Bearer ${token}` };
+    }
+  }
+  return {};
+}
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   // Read stored client JWT token
@@ -103,7 +115,7 @@ export const api = {
     apiRequest(`tradein/quotes/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // CMS
-  getBlogs: () => apiRequest('cms/blogs'),
+  getLegacyCmsBlogs: () => apiRequest('cms/blogs'),
   getBlogBySlug: (slug: string) => apiRequest(`cms/blogs/${slug}`),
   getReviews: () => apiRequest('cms/reviews'),
   getReviewsAdmin: () => apiRequest('cms/reviews/admin'),
@@ -164,7 +176,8 @@ export const api = {
   reorderTeamMembers: (ids: string[]) => apiRequest('cms/team-reorder', { method: 'PATCH', body: JSON.stringify({ ids }) }),
 
   // Sub-Admin management
-  subAdminLogin: (password: string) => apiRequest('sub-admin/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  subAdminLogin: (password: string, username?: string) =>
+    apiRequest('sub-admin/login', { method: 'POST', body: JSON.stringify({ password, username: username || '' }) }),
   listSubAdmins: () => apiRequest('sub-admin'),
   createSubAdmin: (payload: { username: string; password: string; permissions: string[] }) =>
     apiRequest('sub-admin', { method: 'POST', body: JSON.stringify(payload) }),
@@ -198,9 +211,84 @@ export const api = {
   updateBrandsSection: (payload: any) => apiRequest('cms/brands-section', { method: 'PUT', body: JSON.stringify(payload) }),
 
   // Research Articles
-  getResearchArticles: () => apiRequest('cms/research-articles'),
-  createResearchArticle: (payload: any) => apiRequest('cms/research-articles', { method: 'POST', body: JSON.stringify(payload) }),
-  deleteResearchArticle: (id: string) => apiRequest(`cms/research-articles/${id}`, { method: 'DELETE' }),
+  getResearchArticles: async () => {
+    try {
+      const res = await fetch('/api/research-articles');
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    try {
+      const res2 = await fetch('/api/v1/cms/research-articles');
+      if (res2.ok) return await res2.json();
+    } catch (e) {}
+    return [];
+  },
+  createResearchArticle: async (payload: any) => {
+    try {
+      const res = await fetch('/api/research-articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest('cms/research-articles', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  deleteResearchArticle: async (id: string) => {
+    try {
+      const res = await fetch(`/api/research-articles/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {}
+    return apiRequest(`cms/research-articles/${id}`, { method: 'DELETE' });
+  },
+
+  // Website Core Pages CMS
+  getCmsContent: async () => {
+    if (typeof window === 'undefined') {
+      return defaultWebsiteCms;
+    }
+    try {
+      const res = await fetch('/api/cms/content', {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.data) {
+          return data.data;
+        }
+      }
+    } catch (e: any) {
+      console.warn('CMS content fetch unavailable, using fallback data:', e?.message || e);
+    }
+    return defaultWebsiteCms;
+  },
+  updateCmsContent: async (payload: any) => {
+    try {
+      const res = await fetch('/api/cms/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
+    } catch (e: any) {
+      console.warn('CMS content update error:', e?.message || e);
+      return { success: false, error: e?.message || 'Update failed' };
+    }
+  },
+  uploadCmsMedia: async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/cms/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
 
   // Careers & Job Openings CMS
   getCareerJobs: async () => {
@@ -236,7 +324,9 @@ export const api = {
   // Career Candidate Applications
   getCareerApplications: async () => {
     try {
-      const res = await fetch('/api/careers/applications');
+      const res = await fetch('/api/careers/applications', {
+        headers: getAdminAuthHeaders()
+      });
       if (res.ok) return await res.json();
     } catch (e) {}
     return [];
@@ -252,14 +342,15 @@ export const api = {
   updateCareerApplicationStatus: async (id: string, status: string) => {
     const res = await fetch('/api/careers/applications', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
       body: JSON.stringify({ id, status })
     });
     return await res.json();
   },
   deleteCareerApplication: async (id: string) => {
     const res = await fetch(`/api/careers/applications?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAdminAuthHeaders()
     });
     return await res.json();
   },
@@ -267,7 +358,9 @@ export const api = {
   // Contact Inquiries (Completely separate from Franchise applications)
   getContactMessages: async () => {
     try {
-      const res = await fetch('/api/contact');
+      const res = await fetch('/api/contact', {
+        headers: getAdminAuthHeaders()
+      });
       if (res.ok) return await res.json();
     } catch (e) {}
     return [];
@@ -283,7 +376,7 @@ export const api = {
   updateContactMessageStatus: async (id: string, status: string) => {
     const res = await fetch('/api/contact', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
       body: JSON.stringify({ id, status })
     });
     return await res.json();
@@ -291,7 +384,52 @@ export const api = {
   deleteContactMessage: async (id: string, clearAll?: boolean) => {
     const query = clearAll ? '?clearAll=true' : `?id=${encodeURIComponent(id)}`;
     const res = await fetch(`/api/contact${query}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAdminAuthHeaders()
+    });
+    return await res.json();
+  },
+
+  // Blog Management & Publishing CMS (TechByte)
+  getBlogs: async (params?: { category?: string; status?: string; query?: string; slug?: string }) => {
+    try {
+      const query = params ? new URLSearchParams(params as any).toString() : '';
+      const res = await fetch(`/api/blogs${query ? `?${query}` : ''}`);
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.error('Error in getBlogs API:', e);
+    }
+    return { success: false, blogs: [] };
+  },
+  createBlog: async (payload: any) => {
+    const res = await fetch('/api/blogs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  },
+  updateBlog: async (idOrPayload: string | any, maybePayload?: any) => {
+    const payload = typeof idOrPayload === 'string' ? { id: idOrPayload, ...maybePayload } : idOrPayload;
+    const res = await fetch('/api/blogs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  },
+  deleteBlog: async (id: string) => {
+    const res = await fetch(`/api/blogs?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    return await res.json();
+  },
+  uploadBlogImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/blogs/upload', {
+      method: 'POST',
+      body: formData,
     });
     return await res.json();
   },

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { verifyAdminAuth, extractBearerToken } from '@/lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'stores.json');
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:3001';
 
 const INITIAL_STORES = [
   {
@@ -55,7 +57,7 @@ const INITIAL_STORES = [
   }
 ];
 
-function getStores(): any[] {
+function getLocalStores(): any[] {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const data = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -67,12 +69,11 @@ function getStores(): any[] {
   } catch (err) {
     console.error('Error reading stores file:', err);
   }
-  // Initialize with default stores if file does not exist
-  saveStores(INITIAL_STORES);
+  saveLocalStores(INITIAL_STORES);
   return INITIAL_STORES;
 }
 
-function saveStores(stores: any[]) {
+function saveLocalStores(stores: any[]) {
   try {
     const dir = path.dirname(DATA_FILE);
     if (!fs.existsSync(dir)) {
@@ -87,7 +88,31 @@ function saveStores(stores: any[]) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const stores = getStores();
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const query = lat && lng ? `?lat=${lat}&lng=${lng}` : '';
+
+    // Attempt to fetch from backend PostgreSQL API first
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(`${BACKEND_URL}/api/v1/cms/stores${query}`, {
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return NextResponse.json(data);
+        }
+      }
+    } catch (_) {
+      // Backend unavailable; seamlessly fall back to local JSON store
+    }
+
+    const stores = getLocalStores();
     return NextResponse.json(stores);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -95,11 +120,42 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
-    const stores = getStores();
+    const token = extractBearerToken(req);
 
-    const newStore = {
+    // Forward to backend CMS
+    let backendSuccess = false;
+    let savedStore: any = null;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${BACKEND_URL}/api/v1/cms/stores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        savedStore = await res.json();
+        backendSuccess = true;
+      }
+    } catch (_) {}
+
+    // Fallback/mirror to local file
+    const stores = getLocalStores();
+    const newStore = savedStore || {
       id: body.id || `store-${Date.now()}`,
       name: body.name || 'EcoFone Store',
       area: body.area || '',
@@ -117,7 +173,7 @@ export async function POST(req: Request) {
     };
 
     stores.unshift(newStore);
-    saveStores(stores);
+    saveLocalStores(stores);
 
     return NextResponse.json({ success: true, store: newStore });
   } catch (err: any) {
@@ -126,13 +182,36 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     if (!body.id) {
       return NextResponse.json({ success: false, error: 'Store ID required' }, { status: 400 });
     }
 
-    const stores = getStores();
+    const token = extractBearerToken(req);
+
+    // Forward to backend CMS
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      await fetch(`${BACKEND_URL}/api/v1/cms/stores/${encodeURIComponent(body.id)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (_) {}
+
+    const stores = getLocalStores();
     const index = stores.findIndex(s => s.id === body.id);
     if (index === -1) {
       return NextResponse.json({ success: false, error: 'Store not found' }, { status: 404 });
@@ -145,7 +224,7 @@ export async function PUT(req: Request) {
       updatedAt: new Date().toISOString()
     };
 
-    saveStores(stores);
+    saveLocalStores(stores);
     return NextResponse.json({ success: true, store: stores[index] });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -153,6 +232,11 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     let id = searchParams.get('id');
@@ -168,9 +252,25 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, error: 'Store ID required' }, { status: 400 });
     }
 
-    const stores = getStores();
+    const token = extractBearerToken(req);
+
+    // Forward to backend CMS
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      await fetch(`${BACKEND_URL}/api/v1/cms/stores/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (_) {}
+
+    const stores = getLocalStores();
     const filtered = stores.filter(s => s.id !== id);
-    saveStores(filtered);
+    saveLocalStores(filtered);
 
     return NextResponse.json({ success: true, message: 'Store deleted successfully' });
   } catch (err: any) {

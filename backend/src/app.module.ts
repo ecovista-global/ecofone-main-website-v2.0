@@ -10,6 +10,10 @@ import { CmsModule } from './cms/cms.module';
 import { SubAdminModule } from './sub-admin/sub-admin.module';
 import { SystemLogModule } from './system-log/system-log.module';
 import { CertificateModule } from './certificate/certificate.module';
+import { HealthModule } from './health/health.module';
+import { ContactModule } from './contact/contact.module';
+import { CareerModule } from './career/career.module';
+import { ResearchModule } from './research/research.module';
 import { XssMiddleware } from './common/middleware/xss.middleware';
 import { BotProtectionMiddleware } from './common/middleware/bot-protection.middleware';
 
@@ -28,6 +32,10 @@ import { BotProtectionMiddleware } from './common/middleware/bot-protection.midd
     SubAdminModule,
     SystemLogModule,
     CertificateModule,
+    HealthModule,
+    ContactModule,
+    CareerModule,
+    ResearchModule,
   ],
   providers: [PrismaService],
   exports: [PrismaService],

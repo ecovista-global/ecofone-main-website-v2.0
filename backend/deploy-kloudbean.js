@@ -3,19 +3,23 @@ const crypto = require('crypto');
 
 const FRONTEND_CONFIG = {
   name: 'Frontend (ecofone-frontend)',
-  webhook: 'https://api-cloud-controller.kloudbean.com/git/642200678/webhook',
-  secret: '16a3756f21e7483aaf576c9448936cde46da47f6e8cf4209bf6ad2797aa722fe',
-  repo: 'Divyansh-chaurasia786/ecofone-frontend'
+  webhook: process.env.KLOUDBEAN_FRONTEND_WEBHOOK || '',
+  secret: process.env.KLOUDBEAN_FRONTEND_SECRET || '',
+  repo: process.env.KLOUDBEAN_FRONTEND_REPO || 'Divyansh-chaurasia786/ecofone-frontend'
 };
 
 const BACKEND_CONFIG = {
   name: 'Backend (ecofone-backend)',
-  webhook: 'https://api-cloud-controller.kloudbean.com/git/642200683/webhook',
-  secret: '58d16422b97c43049e3edc9d49bfb163053735617f194f12b51c1d3e1618bd19',
-  repo: 'Divyansh-chaurasia786/ecofone-backend'
+  webhook: process.env.KLOUDBEAN_BACKEND_WEBHOOK || '',
+  secret: process.env.KLOUDBEAN_BACKEND_SECRET || '',
+  repo: process.env.KLOUDBEAN_BACKEND_REPO || 'Divyansh-chaurasia786/ecofone-backend'
 };
 
 async function triggerWebhook(config) {
+  if (!config.webhook || !config.secret) {
+    console.error(`❌ [${config.name}] Missing webhook URL or secret in environment variables.`);
+    return;
+  }
   console.log(`🚀 Triggering Kloudbean deployment for: ${config.name}...`);
   const payload = JSON.stringify({
     ref: 'refs/heads/main',

@@ -46,6 +46,10 @@ export class ResetSubAdminPasswordDto {
 export class SubAdminLoginDto {
   @IsNotEmpty()
   @IsString()
+  username: string;
+
+  @IsNotEmpty()
+  @IsString()
   @MinLength(8)
   @MaxLength(100)
   password: string;
@@ -63,11 +67,11 @@ export class VerifySubAdminPasswordDto {
 export class SubAdminController {
   constructor(private subAdminService: SubAdminService) {}
 
-  /** POST /sub-admin/login  — password-only, returns JWT-like token */
+  /** POST /sub-admin/login — requires username and password, returns JWT token */
   @Post('login')
   @UseGuards(ThrottlerGuard)
   async login(@Body() body: SubAdminLoginDto) {
-    return this.subAdminService.login(body.password);
+    return this.subAdminService.login(body.password, body.username);
   }
 
   /** GET /sub-admin — list all (master admin only) */

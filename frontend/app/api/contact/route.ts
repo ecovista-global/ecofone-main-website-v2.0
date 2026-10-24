@@ -4,6 +4,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../lib/email-templates';
+import { verifyAdminAuth } from '../../../lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'contact_messages.json');
 
@@ -31,7 +32,30 @@ function saveMessages(messages: any[]) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
+  // Query backend PostgreSQL database first
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+    const authHeader = req.headers.get('authorization') || '';
+    const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/contact`, {
+      headers: { ...(authHeader && { Authorization: authHeader }) },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const dbMessages = await res.json();
+      if (Array.isArray(dbMessages) && dbMessages.length > 0) {
+        return NextResponse.json(dbMessages);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Contact] Backend DB fetch warning, using local fallback:', err?.message);
+  }
+
   const messages = getMessages();
   return NextResponse.json(messages);
 }
@@ -56,7 +80,26 @@ export async function POST(req: Request) {
     const contactMessage = message || experienceDesc || '';
     const contactLocation = location || locationPreference || 'Lucknow HQ Inquiry';
 
-    // 1. Save to dedicated contact messages storage
+    // 1. Persist to PostgreSQL backend database
+    try {
+      const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+      await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicantName: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+          locationPreference: contactLocation,
+          investmentCapacity: 0,
+          experienceDesc: contactMessage,
+        }),
+      });
+    } catch (dbErr: any) {
+      console.warn('[Contact] Backend DB persistence warning:', dbErr?.message);
+    }
+
+    // 2. Also save to local storage as safety backup
     const messages = getMessages();
     const newMessage = {
       id: `contact-${Date.now()}`,
@@ -76,7 +119,7 @@ export async function POST(req: Request) {
     const smtpHost = process.env.BUSINESS_SMTP_HOST || process.env.SMTP_HOST || 'smtp.zoho.in';
     const smtpPort = process.env.BUSINESS_SMTP_PORT ? parseInt(process.env.BUSINESS_SMTP_PORT) : (process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465);
     const smtpUser = process.env.BUSINESS_SMTP_USER || 'business@ecofone.co.in';
-    const smtpPass = process.env.BUSINESS_SMTP_PASS || '4RvSXQTwhahz';
+    const smtpPass = process.env.BUSINESS_SMTP_PASS;
 
     // Target: ONLY business@ecofone.co.in
     const recipientEmails = process.env.BUSINESS_EMAIL || 'business@ecofone.co.in';
@@ -169,6 +212,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const { id, status } = await req.json();
     const messages = getMessages();
     const index = messages.findIndex((m: any) => m.id === id);
@@ -185,6 +233,11 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     const clearAll = url.searchParams.get('clearAll');

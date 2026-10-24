@@ -210,19 +210,19 @@ export default function StoresManager() {
     <div className="space-y-6">
       
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 to-[#0e2a1f] p-6 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <StoreIcon className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
+            <StoreIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <span>Stores & Experience Centers</span>
-              <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
+              <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200/60">
                 {stores.length} Outlets
               </span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Manage storefront photos, addresses, contact numbers, timings and Open/Closed status displayed on the homepage.
             </p>
           </div>
@@ -232,13 +232,13 @@ export default function StoresManager() {
           <button
             onClick={fetchStores}
             title="Refresh stores"
-            className="p-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-xs"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={openCreateModal}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2 hover:scale-[1.02]"
+            className="bg-[#059669] hover:bg-[#047857] text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Store</span>
@@ -283,10 +283,10 @@ export default function StoresManager() {
           {stores.map((store) => (
             <div 
               key={store.id} 
-              className="bg-[#111827]/90 border border-slate-800 rounded-3xl overflow-hidden shadow-xl flex flex-col justify-between group hover:border-slate-700 transition-all"
+              className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex flex-col justify-between group hover:border-emerald-300 hover:shadow-md transition-all"
             >
               {/* Storefront Image Preview */}
-              <div className="relative w-full h-44 bg-slate-950 overflow-hidden">
+              <div className="relative w-full h-44 bg-slate-100 overflow-hidden">
                 <img
                   src={store.imageUrl || '/store_hazratganj.jpg'}
                   alt={store.name}
@@ -300,8 +300,8 @@ export default function StoresManager() {
                     title="Click to toggle status"
                     className={`inline-flex items-center gap-1.5 text-[10px] font-black px-3 py-1 rounded-full shadow-md backdrop-blur-md cursor-pointer transition-transform hover:scale-105 ${
                       store.isOpen !== false
-                        ? 'bg-emerald-500/90 text-white hover:bg-emerald-600'
-                        : 'bg-rose-500/90 text-white hover:bg-rose-600'
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : 'bg-rose-600 text-white hover:bg-rose-700'
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${store.isOpen !== false ? 'bg-white animate-pulse' : 'bg-rose-200'}`} />
@@ -314,14 +314,14 @@ export default function StoresManager() {
                   <button
                     onClick={() => openEditModal(store)}
                     title="Edit Store"
-                    className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md"
+                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-emerald-600 hover:text-white text-slate-700 flex items-center justify-center backdrop-blur-md transition-all shadow-md"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(store.id, store.name)}
                     title="Delete Store"
-                    className="w-8 h-8 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md"
+                    className="w-8 h-8 rounded-full bg-white/90 hover:bg-rose-600 hover:text-white text-slate-700 flex items-center justify-center backdrop-blur-md transition-all shadow-md"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -332,7 +332,7 @@ export default function StoresManager() {
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-white text-base leading-snug">
+                    <h4 className="font-bold text-slate-900 text-base leading-snug">
                       {store.name}
                     </h4>
                     {store.mapsUrl && (
@@ -340,7 +340,7 @@ export default function StoresManager() {
                         href={store.mapsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 hover:text-emerald-400 transition-colors flex-shrink-0 mt-0.5"
+                        className="text-slate-400 hover:text-emerald-600 transition-colors flex-shrink-0 mt-0.5"
                         title="View on Google Maps"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -348,35 +348,35 @@ export default function StoresManager() {
                     )}
                   </div>
 
-                  <div className="space-y-2.5 mt-3 text-xs text-slate-300">
+                  <div className="space-y-2.5 mt-3 text-xs text-slate-600">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <p className="leading-relaxed line-clamp-2">{store.address}</p>
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <p className="leading-relaxed line-clamp-2 text-slate-600">{store.address}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                      <Clock className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />
                       <span>{store.timings || '10:00 AM - 09:00 PM'}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                       <span>{store.phone || '+91 99199 65499'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer Controls */}
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                   <button
                     onClick={() => handleToggleStatus(store)}
-                    className="text-[11px] font-bold text-slate-400 hover:text-white transition-colors"
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 transition-colors"
                   >
                     Switch to: {store.isOpen !== false ? '🔴 Closed' : '🟢 Open Now'}
                   </button>
                   <button
                     onClick={() => openEditModal(store)}
-                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1"
+                    className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
                   >
                     <Edit3 className="w-3 h-3" /> Edit Details
                   </button>
@@ -391,27 +391,27 @@ export default function StoresManager() {
 
       {/* ── CREATE / EDIT STORE MODAL ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#111827] border border-slate-800 w-full max-w-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative my-8 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white border border-slate-200 w-full max-w-xl rounded-2xl p-6 sm:p-7 shadow-2xl relative my-8 animate-scale-up">
             
             {/* Close Button */}
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition-all"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 flex items-center justify-center transition-all"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Modal Title */}
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
                 <StoreIcon className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-white">
+                <h3 className="text-lg font-black text-slate-900">
                   {editingStore ? 'Edit Store Outlet' : 'Add New Store Outlet'}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Fill in store address, timings, contact number, and storefront photo.
                 </p>
               </div>
@@ -422,7 +422,7 @@ export default function StoresManager() {
               
               {/* Store Name */}
               <div>
-                <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                   Store Name <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -431,14 +431,14 @@ export default function StoresManager() {
                   placeholder="e.g. EcoFone Store - Hazratganj"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                 />
               </div>
 
               {/* Area & City in 2 columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                  <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                     Area / Locality
                   </label>
                   <input
@@ -446,11 +446,11 @@ export default function StoresManager() {
                     placeholder="e.g. Hazratganj"
                     value={area}
                     onChange={(e) => setArea(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                  <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                     City
                   </label>
                   <input
@@ -458,14 +458,14 @@ export default function StoresManager() {
                     placeholder="e.g. Lucknow"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
               {/* Complete Address */}
               <div>
-                <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                   Complete Address <span className="text-rose-500">*</span>
                 </label>
                 <textarea
@@ -474,14 +474,14 @@ export default function StoresManager() {
                   placeholder="e.g. Shop No. 12, Ground Floor, Hazratganj Market, Lucknow, Uttar Pradesh – 226001"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 resize-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white resize-none transition-colors"
                 />
               </div>
 
               {/* Phone & Timings */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                  <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                     Contact Phone Number <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -490,12 +490,12 @@ export default function StoresManager() {
                     placeholder="e.g. +91 99199 65499"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                  <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                     Store Timings
                   </label>
                   <input
@@ -503,34 +503,34 @@ export default function StoresManager() {
                     placeholder="e.g. 10:00 AM - 10:00 PM"
                     value={timings}
                     onChange={(e) => setTimings(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
               {/* Open Now Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
                 <div>
-                  <p className="font-bold text-white text-xs">Store Status</p>
-                  <p className="text-[10px] text-slate-400">Shows green "Open Now" or red "Closed" badge on homepage</p>
+                  <p className="font-bold text-slate-900 text-xs">Store Status</p>
+                  <p className="text-[10px] text-slate-500">Shows green "Open Now" or red "Closed" badge on homepage</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
                   className={`px-3.5 py-1.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition-all ${
                     isOpen 
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                      : 'bg-rose-100 text-rose-800 border border-rose-200'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-600' : 'bg-rose-600'}`} />
                   {isOpen ? 'Open Now' : 'Closed'}
                 </button>
               </div>
 
               {/* Store Image Field & Upload */}
               <div>
-                <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                   Storefront Image URL / File Upload
                 </label>
                 <div className="flex items-center gap-2">
@@ -539,9 +539,9 @@ export default function StoresManager() {
                     placeholder="/store_hazratganj.jpg or https://..."
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                   />
-                  <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all whitespace-nowrap">
+                  <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2.5 rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all whitespace-nowrap">
                     <Upload className="w-3.5 h-3.5" />
                     <span>{isUploading ? 'Uploading...' : 'Upload Photo'}</span>
                     <input
@@ -564,8 +564,8 @@ export default function StoresManager() {
                       onClick={() => setImageUrl(preset.url)}
                       className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all ${
                         imageUrl === preset.url
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold'
-                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
                       }`}
                     >
                       {preset.label}
@@ -576,7 +576,7 @@ export default function StoresManager() {
 
               {/* Google Maps URL */}
               <div>
-                <label className="block text-slate-300 font-bold mb-1 uppercase tracking-wider text-[10px]">
+                <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px]">
                   Google Maps Link / Directions URL (Optional)
                 </label>
                 <input
@@ -584,26 +584,26 @@ export default function StoresManager() {
                   placeholder="https://maps.app.goo.gl/... or google maps URL"
                   value={mapsUrl}
                   onChange={(e) => setMapsUrl(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">
+                <p className="text-[10px] text-slate-400 mt-1">
                   Leave empty to auto-generate directions from the store address.
                 </p>
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-bold transition-all"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || isUploading}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold shadow-lg transition-all hover:scale-[1.01] disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-extrabold shadow-sm transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving...' : editingStore ? 'Update Store' : 'Create Store'}
                 </button>

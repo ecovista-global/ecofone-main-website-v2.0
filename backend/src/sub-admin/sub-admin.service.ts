@@ -73,37 +73,50 @@ export class SubAdminService {
     return { valid: match };
   }
 
-  /** Password-only login — matches against all sub-admins */
-  async login(password: string) {
-    const all = await this.prisma.subAdmin.findMany();
-
-    for (const sa of all) {
-      const match = await bcrypt.compare(password, sa.password);
-      if (match) {
-        const payload = {
-          id: sa.id,
-          username: sa.username,
-          role: 'SUB_ADMIN',
-          permissions: sa.permissions,
-        };
-        const token = jwt.sign(
-          payload,
-          process.env.JWT_SECRET || 'ecofone_jwt_super_secret_key',
-          { expiresIn: '7d' },
-        );
-        return {
-          token,
-          user: {
-            id: sa.id,
-            username: sa.username,
-            role: 'SUB_ADMIN',
-            permissions: sa.permissions,
-          },
-        };
-      }
+  /** Sub-admin login requiring username and password — single DB lookup and single bcrypt comparison */
+  async login(password: string, username?: string) {
+    if (!password) {
+      throw new BadRequestException('Password is required.');
+    }
+    if (!username || !username.trim()) {
+      throw new BadRequestException('Username is required for sub-admin login.');
     }
 
-    throw new UnauthorizedException('Incorrect password.');
+    const cleanUsername = username.trim().toLowerCase();
+    const sa = await this.prisma.subAdmin.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    if (!sa) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    const match = await bcrypt.compare(password, sa.password);
+    if (!match) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is missing');
+    }
+
+    const payload = {
+      id: sa.id,
+      username: sa.username,
+      role: 'SUB_ADMIN',
+      permissions: sa.permissions,
+    };
+    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    return {
+      token,
+      user: {
+        id: sa.id,
+        username: sa.username,
+        role: 'SUB_ADMIN',
+        permissions: sa.permissions,
+      },
+    };
   }
 
   async updatePassword(id: string, password: string) {

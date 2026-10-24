@@ -4,6 +4,7 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 import { buildEcoFoneEmailHtml, getEmailLogoAttachment } from '../../../../lib/email-templates';
+import { verifyAdminAuth } from '../../../../lib/auth-guard';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'careers_applications.json');
 const HR_EMAIL = process.env.HR_EMAIL || 'future@ecofone.co.in';
@@ -36,7 +37,7 @@ async function dispatchEmailToHr(app: any) {
   const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.in';
   const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
   const smtpUser = process.env.SMTP_USER || 'future@ecofone.co.in';
-  const smtpPass = process.env.SMTP_PASS || '1jD5VQjdhRZx';
+  const smtpPass = process.env.SMTP_PASS;
 
   // 1. Internal Notification for EcoFone HR / Talent Team
   const internalEmailHtml = buildEcoFoneEmailHtml({
@@ -146,7 +147,30 @@ async function dispatchEmailToHr(app: any) {
   return { sent: true, method: 'direct_recorded' };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = verifyAdminAuth(req);
+  if (!auth.isAuthorized) {
+    return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+  }
+
+  // Query backend PostgreSQL database first
+  try {
+    const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+    const authHeader = req.headers.get('authorization') || '';
+    const res = await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/career/applications`, {
+      headers: { ...(authHeader && { Authorization: authHeader }) },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const dbApps = await res.json();
+      if (Array.isArray(dbApps) && dbApps.length > 0) {
+        return NextResponse.json(dbApps);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Careers] Backend DB fetch warning, using local fallback:', err?.message);
+  }
+
   const apps = getApplications();
   return NextResponse.json(apps);
 }
@@ -207,6 +231,19 @@ export async function POST(req: Request) {
       status: 'PENDING',
       createdAt: new Date().toISOString()
     };
+
+    // 1. Persist to PostgreSQL backend database
+    try {
+      const backendUrl = process.env.BACKEND_URL || process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:4012';
+      await fetch(`${backendUrl.replace(/\/+$/, '')}/api/v1/career/applications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApp),
+      });
+    } catch (dbErr: any) {
+      console.warn('[Careers] Direct backend DB persistence warning:', dbErr?.message);
+    }
+
     apps.unshift(newApp);
     saveApplications(apps);
 
@@ -226,6 +263,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const body = await req.json();
     if (!body.id) {
       return NextResponse.json({ success: false, error: 'Application ID required' }, { status: 400 });
@@ -248,6 +290,11 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const auth = verifyAdminAuth(req);
+    if (!auth.isAuthorized) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {

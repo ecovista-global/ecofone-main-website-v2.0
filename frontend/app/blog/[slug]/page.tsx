@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { BLOG_POSTS, getBlogPostBySlug, getAllBlogSlugs, getRelatedPosts } from '../../../data/blogs';
+import { getBlogPostBySlug, getAllBlogSlugs, getRelatedPosts } from '../../../lib/blogs-server';
 import BlogDetailClient from './blog-detail-client';
+
+export const dynamic = 'force-dynamic';
 
 interface BlogDetailPageProps {
   params: Promise<{ slug: string }>;

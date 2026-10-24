@@ -87,7 +87,7 @@ export default function ResearchManager() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 px-5 py-3 bg-[#0E1524] hover:bg-[#1a2538] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm flex-shrink-0"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Add Article</span>
@@ -165,9 +165,32 @@ export default function ResearchManager() {
                 <input type="url" value={url} onChange={e => setUrl(e.target.value)} required placeholder="https://..." className="w-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-900 px-4 py-3 rounded-xl outline-none focus:border-emerald-500 focus:bg-white" />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Right Side Image URL (Optional)</label>
-                <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="/counterpoint_1.png or https://..." className="w-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-900 px-4 py-3 rounded-xl outline-none focus:border-emerald-500 focus:bg-white" />
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Cover Image (Optional)</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all">
+                    <span>Upload From Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const res = await api.uploadCmsMedia(file);
+                          if (res?.success && res.url) setImageUrl(res.url);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    placeholder="Or enter image URL..."
+                    className="flex-grow bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 focus:bg-white"
+                  />
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 mt-auto">

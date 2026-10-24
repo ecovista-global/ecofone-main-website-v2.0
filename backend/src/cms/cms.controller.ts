@@ -13,7 +13,19 @@ export class CreateStoreDto {
 
   @IsOptional()
   @IsString()
+  area?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  timings?: string;
 
   @IsNotEmpty()
   @IsNumber()
@@ -28,8 +40,15 @@ export class CreateStoreDto {
   phone?: string;
 
   @IsOptional()
+  isOpen?: boolean;
+
+  @IsOptional()
   @IsString()
   type?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 
   @IsOptional()
   @IsString()

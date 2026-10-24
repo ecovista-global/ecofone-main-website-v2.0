@@ -14,41 +14,115 @@ export interface CheckoutInput {
 export class EcommerceService {
   constructor(private prisma: PrismaService) {}
 
-  async getCatalog(filters: { brand?: string; ram?: string; storage?: string; grade?: string; minPrice?: number; maxPrice?: number }) {
-    const skus = await this.prisma.sKU.findMany({
-      include: {
-        variant: {
-          include: {
-            model: {
-              include: {
-                brand: true
+  async getCatalog(filters: {
+    brand?: string;
+    ram?: string;
+    storage?: string;
+    grade?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+    take?: number;
+    skip?: number;
+  }) {
+    const where: any = {};
+
+    if (filters.grade) {
+      where.grade = filters.grade.toUpperCase() as Grade;
+    }
+
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      where.basePrice = {};
+      if (filters.minPrice !== undefined) {
+        where.basePrice.gte = Number(filters.minPrice);
+      }
+      if (filters.maxPrice !== undefined) {
+        where.basePrice.lte = Number(filters.maxPrice);
+      }
+    }
+
+    const variantWhere: any = {};
+    if (filters.ram) {
+      variantWhere.ram = { equals: filters.ram, mode: 'insensitive' };
+    }
+    if (filters.storage) {
+      variantWhere.storage = { equals: filters.storage, mode: 'insensitive' };
+    }
+
+    const modelWhere: any = {};
+    if (filters.brand) {
+      modelWhere.brand = {
+        slug: { equals: filters.brand.toLowerCase(), mode: 'insensitive' }
+      };
+    }
+
+    if (filters.search) {
+      const search = filters.search.trim();
+      modelWhere.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { brand: { name: { contains: search, mode: 'insensitive' } } },
+        { slug: { contains: search.toLowerCase(), mode: 'insensitive' } },
+      ];
+    }
+
+    if (Object.keys(modelWhere).length > 0) {
+      variantWhere.model = modelWhere;
+    }
+
+    if (Object.keys(variantWhere).length > 0) {
+      where.variant = variantWhere;
+    }
+
+    const hasPagination = filters.page !== undefined || filters.limit !== undefined || filters.take !== undefined || filters.skip !== undefined;
+    const take = filters.take !== undefined ? Number(filters.take) : (filters.limit !== undefined ? Number(filters.limit) : 50);
+    const skip = filters.skip !== undefined ? Number(filters.skip) : (filters.page !== undefined ? (Math.max(Number(filters.page), 1) - 1) * take : 0);
+
+    const [skus, totalCount] = await Promise.all([
+      this.prisma.sKU.findMany({
+        where,
+        take,
+        skip,
+        include: {
+          variant: {
+            include: {
+              model: {
+                include: {
+                  brand: true
+                }
               }
+            }
+          },
+          inventory: {
+            where: {
+              status: InventoryStatus.AVAILABLE
             }
           }
         },
-        inventory: true
-      }
-    });
+        orderBy: { basePrice: 'asc' }
+      }),
+      this.prisma.sKU.count({ where })
+    ]);
 
-    let items = skus.map((sku: any) => {
+    const items = skus.map((sku: any) => {
       const variant = sku.variant;
-      const model = variant.model;
-      const brand = model.brand;
-      
-      const stockCount = sku.inventory.filter(
-        (inv: any) => inv.status === 'AVAILABLE'
-      ).length;
+      const model = variant?.model;
+      const brand = model?.brand;
+
+      const stockCount = sku.inventory ? sku.inventory.length : 0;
 
       return {
         skuId: sku.id,
-        brandName: brand.name,
-        brandSlug: brand.slug,
-        modelName: model.name,
-        modelSlug: model.slug,
-        specifications: model.specifications,
-        ram: variant.ram,
-        storage: variant.storage,
-        color: variant.color,
+        variantId: sku.variantId,
+        brandName: brand?.name || 'Unknown',
+        brandSlug: brand?.slug || 'unknown',
+        modelName: model?.name || 'Unknown Model',
+        modelSlug: model?.slug || 'unknown-model',
+        specifications: model?.specifications || {},
+        ram: variant?.ram || '',
+        storage: variant?.storage || '',
+        color: variant?.color || '',
         grade: sku.grade,
         price: sku.basePrice,
         dealerPrice: sku.dealerPrice,
@@ -56,23 +130,14 @@ export class EcommerceService {
       };
     });
 
-    if (filters.brand) {
-      items = items.filter((i: any) => i.brandSlug === filters.brand.toLowerCase());
-    }
-    if (filters.ram) {
-      items = items.filter((i: any) => i.ram.toLowerCase() === filters.ram.toLowerCase());
-    }
-    if (filters.storage) {
-      items = items.filter((i: any) => i.storage.toLowerCase() === filters.storage.toLowerCase());
-    }
-    if (filters.grade) {
-      items = items.filter((i: any) => i.grade === filters.grade.toUpperCase());
-    }
-    if (filters.minPrice) {
-      items = items.filter((i: any) => i.price >= filters.minPrice);
-    }
-    if (filters.maxPrice) {
-      items = items.filter((i: any) => i.price <= filters.maxPrice);
+    if (hasPagination) {
+      return {
+        items,
+        total: totalCount,
+        page: filters.page !== undefined ? Number(filters.page) : Math.floor(skip / take) + 1,
+        limit: take,
+        totalPages: Math.ceil(totalCount / take),
+      };
     }
 
     return items;
@@ -225,17 +290,25 @@ export class EcommerceService {
     }
 
     const rzpOrderId = order.paymentId;
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_mocksecret12345';
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      throw new Error('RAZORPAY_KEY_SECRET environment variable is missing');
+    }
+
+    if (!razorpayPaymentId || !razorpaySignature) {
+      throw new BadRequestException('Payment ID and signature are required');
+    }
 
     const generatedSignature = crypto
       .createHmac('sha256', secret)
       .update(`${rzpOrderId}|${razorpayPaymentId}`)
       .digest('hex');
 
-    const signatureMatch = (generatedSignature === razorpaySignature);
-    const isMockBypass = razorpaySignature === 'rzp_mock_signature';
+    const sigBuf = Buffer.from(razorpaySignature, 'utf-8');
+    const expBuf = Buffer.from(generatedSignature, 'utf-8');
+    const signatureMatch = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
 
-    if (signatureMatch || isMockBypass) {
+    if (signatureMatch) {
       await this.prisma.$transaction(async (tx) => {
         // Update order status to paid
         await tx.order.update({
@@ -282,14 +355,23 @@ export class EcommerceService {
   }
 
   async handleWebhook(payload: any, signature: string): Promise<void> {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_12345';
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      throw new Error('RAZORPAY_WEBHOOK_SECRET environment variable is missing');
+    }
     
+    if (!signature) {
+      throw new BadRequestException('Webhook signature missing');
+    }
+
     const expectedSig = crypto
       .createHmac('sha256', secret)
       .update(JSON.stringify(payload))
       .digest('hex');
 
-    if (expectedSig !== signature) {
+    const sigBuf = Buffer.from(signature, 'utf-8');
+    const expBuf = Buffer.from(expectedSig, 'utf-8');
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       throw new BadRequestException('Invalid webhook signature origin');
     }
 

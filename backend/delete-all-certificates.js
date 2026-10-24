@@ -1,11 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient({
+const prisma = new PrismaClient(process.env.DATABASE_URL ? {
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_EB9knm7bFeCf@ep-blue-sun-adp2jl9q-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+      url: process.env.DATABASE_URL
     }
   }
-});
+} : undefined);
 
 async function main() {
   console.log('[DB Operation] Connecting to database...');

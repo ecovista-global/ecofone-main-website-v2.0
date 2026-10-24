@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { S3Client, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class CmsService {
+  private readonly logger = new Logger(CmsService.name);
   private r2Client: S3Client;
 
   constructor(private prisma: PrismaService) {
@@ -18,7 +19,33 @@ export class CmsService {
     });
   }
 
+  private cachedStorageUsage: number | null = null;
+  private lastStorageCheck: number = 0;
+
   private async getStorageUsage(): Promise<number> {
+    const now = Date.now();
+    // Cache for 60 seconds in memory
+    if (this.cachedStorageUsage !== null && now - this.lastStorageCheck < 60000) {
+      return this.cachedStorageUsage;
+    }
+
+    try {
+      // 1. Fetch fast atomic counter from database
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'storage_used_bytes' },
+      });
+
+      if (setting && !isNaN(Number(setting.value))) {
+        this.cachedStorageUsage = Number(setting.value);
+        this.lastStorageCheck = now;
+        return this.cachedStorageUsage;
+      }
+    } catch (_) {
+      // DB cold start or table migration in progress
+    }
+
+    // 2. Fallback one-time baseline calculation
+    let totalSize = 0;
     const isMockR2 = !process.env.R2_ACCOUNT_ID || process.env.R2_ACCESS_KEY_ID === 'your_r2_access_key_id' || !process.env.R2_ACCESS_KEY_ID;
     
     if (isMockR2) {
@@ -26,47 +53,49 @@ export class CmsService {
         const fs = require('fs');
         const path = require('path');
         const uploadDir = path.resolve(__dirname, '..', '..', 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-          return 0;
+        if (fs.existsSync(uploadDir)) {
+          const files = fs.readdirSync(uploadDir);
+          for (const file of files) {
+            totalSize += fs.statSync(path.join(uploadDir, file)).size;
+          }
         }
-        const files = fs.readdirSync(uploadDir);
-        let totalSize = 0;
-        for (const file of files) {
-          const stats = fs.statSync(path.join(uploadDir, file));
-          totalSize += stats.size;
-        }
-        return totalSize;
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to calculate local storage usage:', err.message);
-        return 0;
       }
     }
 
-    const bucketName = process.env.R2_BUCKET_NAME || 'ecofone-bucket';
-    try {
-      let totalSize = 0;
-      let isTruncated = true;
-      let continuationToken: string | undefined = undefined;
+    this.cachedStorageUsage = totalSize;
+    this.lastStorageCheck = now;
 
-      while (isTruncated) {
-        const response = await this.r2Client.send(
-          new ListObjectsV2Command({
-            Bucket: bucketName,
-            ContinuationToken: continuationToken,
-          })
-        );
-        if (response.Contents) {
-          for (const item of response.Contents) {
-            totalSize += item.Size || 0;
-          }
-        }
-        isTruncated = response.IsTruncated || false;
-        continuationToken = response.NextContinuationToken;
-      }
-      return totalSize;
-    } catch (err) {
-      console.warn('Failed to calculate R2 storage usage, allowing upload:', err.message);
-      return 0;
+    // Persist calculated baseline
+    try {
+      await this.prisma.systemSetting.upsert({
+        where: { key: 'storage_used_bytes' },
+        create: { key: 'storage_used_bytes', value: String(totalSize) },
+        update: { value: String(totalSize) },
+      });
+    } catch (_) {}
+
+    return totalSize;
+  }
+
+  private async incrementStorageUsage(bytesAdded: number): Promise<void> {
+    if (this.cachedStorageUsage !== null) {
+      this.cachedStorageUsage += bytesAdded;
+    }
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'storage_used_bytes' },
+      });
+      const current = setting ? Number(setting.value) || 0 : (this.cachedStorageUsage || 0);
+      const updated = current + bytesAdded;
+      await this.prisma.systemSetting.upsert({
+        where: { key: 'storage_used_bytes' },
+        create: { key: 'storage_used_bytes', value: String(updated) },
+        update: { value: String(updated) },
+      });
+    } catch (err: any) {
+      console.warn('Failed to update storage counter in DB:', err?.message);
     }
   }
 
@@ -95,6 +124,7 @@ export class CmsService {
         fs.writeFileSync(filePath, buffer);
         
         const backendUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+        await this.incrementStorageUsage(fileSize);
         return `${backendUrl}/uploads/${fileKey}`;
       } catch (err) {
         console.error('Local file upload failed:', err.message);
@@ -115,6 +145,8 @@ export class CmsService {
         })
       );
       
+      await this.incrementStorageUsage(fileSize);
+
       const publicUrl = process.env.R2_PUBLIC_DOMAIN 
         ? `${process.env.R2_PUBLIC_DOMAIN}/${key}`
         : `https://${bucketName}.r2.cloudflarestorage.com/${key}`;
@@ -393,16 +425,34 @@ export class CmsService {
     };
   }
 
-  async addStore(data: { name: string; address?: string; latitude: number; longitude: number; phone?: string; type?: string; mapsUrl?: string }): Promise<any> {
+  async addStore(data: {
+    name: string;
+    area?: string;
+    city?: string;
+    address?: string;
+    timings?: string;
+    latitude: number;
+    longitude: number;
+    phone?: string;
+    isOpen?: boolean;
+    type?: string;
+    imageUrl?: string;
+    mapsUrl?: string;
+  }): Promise<any> {
     return this.prisma.store.create({
       data: {
         name: data.name,
+        area: data.area || '',
+        city: data.city || 'Lucknow',
         address: data.address || '',
+        timings: data.timings || '10:00 AM - 09:00 PM',
         latitude: Number(data.latitude),
         longitude: Number(data.longitude),
         phone: data.phone || '',
-        mapsUrl: data.mapsUrl || '',
+        isOpen: data.isOpen !== undefined ? Boolean(data.isOpen) : true,
         type: data.type || 'LIVE',
+        imageUrl: data.imageUrl || '/store_hazratganj.jpg',
+        mapsUrl: data.mapsUrl || '',
       }
     });
   }
@@ -425,11 +475,33 @@ export class CmsService {
     });
   }
 
-  async updateStore(id: string, data: { type?: string; address?: string; phone?: string; mapsUrl?: string; latitude?: number; longitude?: number }): Promise<any> {
+  async updateStore(
+    id: string,
+    data: {
+      name?: string;
+      area?: string;
+      city?: string;
+      type?: string;
+      address?: string;
+      timings?: string;
+      phone?: string;
+      isOpen?: boolean;
+      imageUrl?: string;
+      mapsUrl?: string;
+      latitude?: number;
+      longitude?: number;
+    },
+  ): Promise<any> {
     const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.area !== undefined) updateData.area = data.area;
+    if (data.city !== undefined) updateData.city = data.city;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.address !== undefined) updateData.address = data.address;
+    if (data.timings !== undefined) updateData.timings = data.timings;
     if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.isOpen !== undefined) updateData.isOpen = Boolean(data.isOpen);
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
     if (data.mapsUrl !== undefined) updateData.mapsUrl = data.mapsUrl;
     if (data.latitude !== undefined) updateData.latitude = Number(data.latitude);
     if (data.longitude !== undefined) updateData.longitude = Number(data.longitude);
@@ -863,31 +935,47 @@ export class CmsService {
   }
 
   async getResearchArticles(): Promise<any> {
-    const fs = require('fs');
-    const filePath = this.getResearchArticlesFilePath();
     try {
-      if (fs.existsSync(filePath)) {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      const articles = await this.prisma.researchArticle.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+      if (articles && articles.length > 0) {
+        return articles;
       }
-    } catch (e) {}
+    } catch (e: any) {
+      this.logger.warn(`Failed to fetch research articles from database: ${e?.message || e}`);
+    }
     return this.getDefaultResearchArticles();
   }
 
   async createResearchArticle(data: any): Promise<any> {
-    const fs = require('fs');
-    const articles = await this.getResearchArticles();
-    const newArticle = { ...data, id: Date.now().toString() };
-    articles.push(newArticle);
-    fs.writeFileSync(this.getResearchArticlesFilePath(), JSON.stringify(articles, null, 2), 'utf-8');
-    return newArticle;
+    try {
+      return await this.prisma.researchArticle.create({
+        data: {
+          publisher: data.publisher || 'EcoFone Research',
+          date: data.date || new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          title: data.title,
+          description: data.description || '',
+          url: data.url || '#',
+          imageUrl: data.imageUrl || '/eco-recycling-article.png',
+        }
+      });
+    } catch (e: any) {
+      this.logger.error(`Failed to create research article in database: ${e?.message || e}`);
+      throw e;
+    }
   }
 
   async deleteResearchArticle(id: string): Promise<any> {
-    const fs = require('fs');
-    let articles = await this.getResearchArticles();
-    articles = articles.filter((a: any) => a.id !== id);
-    fs.writeFileSync(this.getResearchArticlesFilePath(), JSON.stringify(articles, null, 2), 'utf-8');
-    return { success: true };
+    try {
+      await this.prisma.researchArticle.delete({
+        where: { id }
+      });
+      return { success: true };
+    } catch (e: any) {
+      this.logger.error(`Failed to delete research article in database: ${e?.message || e}`);
+      throw e;
+    }
   }
 
   // --- Gallery Items CMS ---

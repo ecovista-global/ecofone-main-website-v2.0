@@ -14,7 +14,6 @@ interface Review {
   isVerified?: boolean;
 }
 
-// Mock data (Will be replaced by API call later)
 const MOCK_INVESTORS = [
   {
     id: '1',
@@ -74,10 +73,35 @@ export default function SplitReviews() {
   const [customers, setCustomers] = useState<any[]>(MOCK_CUSTOMERS);
   const [investorIndex, setInvestorIndex] = useState(0);
   const [customerIndex, setCustomerIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const checkWidth = () => {
+      setIsDesktop(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+    };
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+    return () => window.removeEventListener('resize', checkWidth);
+  }, []);
 
   useEffect(() => {
     async function loadReviews() {
       try {
+        // Try CMS data first for real-time live sync with Admin Console
+        const cmsData = await api.getCmsContent();
+        if (cmsData && cmsData.testimonials) {
+          if (Array.isArray(cmsData.testimonials.investors) && cmsData.testimonials.investors.length > 0) {
+            const activeInv = cmsData.testimonials.investors.filter((i: any) => (i.status || 'Active') === 'Active');
+            if (activeInv.length > 0) setInvestors(activeInv);
+          }
+          if (Array.isArray(cmsData.testimonials.customers) && cmsData.testimonials.customers.length > 0) {
+            const activeCust = cmsData.testimonials.customers.filter((c: any) => (c.status || 'Active') === 'Active');
+            if (activeCust.length > 0) setCustomers(activeCust);
+          }
+          return;
+        }
+
+        // Secondary fallback to API
         const res = await api.getReviews();
         if (res && res.reviews && Array.isArray(res.reviews) && res.reviews.length > 0) {
           const fetchedInvestors = res.reviews.filter((r: Review) => r.type === 'INVESTOR').map((r: Review) => ({
@@ -101,19 +125,44 @@ export default function SplitReviews() {
           if (fetchedCustomers.length > 0) setCustomers(fetchedCustomers);
         }
       } catch (err) {
-        console.warn('Backend API connection refused/offline. Using verified fallback reviews.', err);
+        console.warn('Using default verified fallback reviews.', err);
       }
     }
     loadReviews();
   }, []);
 
+  // Safe Index Clamping (Prevents ever scrolling into empty blank white space)
+  const itemsPerView = isDesktop ? 3 : 1;
+  const maxInvestor = Math.max(0, investors.length - itemsPerView);
+  const maxCustomer = Math.max(0, customers.length - itemsPerView);
+
+  useEffect(() => {
+    if (investorIndex > maxInvestor) setInvestorIndex(maxInvestor);
+  }, [maxInvestor, investorIndex]);
+
+  useEffect(() => {
+    if (customerIndex > maxCustomer) setCustomerIndex(maxCustomer);
+  }, [maxCustomer, customerIndex]);
+
   // Pagination for Investors
-  const nextInvestor = () => setInvestorIndex((prev) => (prev + 1) % investors.length);
-  const prevInvestor = () => setInvestorIndex((prev) => (prev - 1 + investors.length) % investors.length);
+  const nextInvestor = () => {
+    if (maxInvestor <= 0) return;
+    setInvestorIndex((prev) => (prev >= maxInvestor ? 0 : prev + 1));
+  };
+  const prevInvestor = () => {
+    if (maxInvestor <= 0) return;
+    setInvestorIndex((prev) => (prev <= 0 ? maxInvestor : prev - 1));
+  };
 
   // Pagination for Customers
-  const nextCustomer = () => setCustomerIndex((prev) => (prev + 1) % customers.length);
-  const prevCustomer = () => setCustomerIndex((prev) => (prev - 1 + customers.length) % customers.length);
+  const nextCustomer = () => {
+    if (maxCustomer <= 0) return;
+    setCustomerIndex((prev) => (prev >= maxCustomer ? 0 : prev + 1));
+  };
+  const prevCustomer = () => {
+    if (maxCustomer <= 0) return;
+    setCustomerIndex((prev) => (prev <= 0 ? maxCustomer : prev - 1));
+  };
 
   // Render Stars
   const renderStars = (rating: number, colorClass: string) => {
@@ -126,12 +175,20 @@ export default function SplitReviews() {
     );
   };
 
+  // Compute slide transforms cleanly
+  const investorSlideStyle = isDesktop
+    ? { transform: `translateX(calc(-${investorIndex * (100 / 3)}% - ${investorIndex * 16}px))` }
+    : { transform: `translateX(calc(-${investorIndex * 100}% - ${investorIndex * 24}px))` };
+
+  const customerSlideStyle = isDesktop
+    ? { transform: `translateX(calc(-${customerIndex * (100 / 3)}% - ${customerIndex * 16}px))` }
+    : { transform: `translateX(calc(-${customerIndex * 100}% - ${customerIndex * 24}px))` };
+
   return (
     <section className="w-full flex flex-col overflow-hidden">
       
       {/* ----------------- INVESTORS SECTION ----------------- */}
       <div className="w-full bg-[#F8FAF9] py-8 sm:py-10 lg:py-12 px-4 sm:px-6 lg:px-12 border-b border-slate-200/50 relative">
-        {/* Subtle background element */}
         <div className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 w-[500px] h-[500px] rounded-full border-[1.5px] border-emerald-500/10 pointer-events-none" />
 
         <div className="max-w-[1440px] mx-auto relative z-10">
@@ -148,61 +205,68 @@ export default function SplitReviews() {
             </div>
           </div>
 
-        {/* Carousel Container */}
-        <div className="relative flex items-center gap-4">
-          <button onClick={prevInvestor} className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex">
-            <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
-          </button>
+          {/* Carousel Container */}
+          <div className="relative flex items-center gap-4">
+            <button 
+              onClick={prevInvestor} 
+              disabled={maxInvestor <= 0}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex ${maxInvestor <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+            </button>
 
-          <div className="w-full overflow-hidden">
-            <div className="flex gap-6 transition-transform duration-500 ease-out" style={{ transform: `translateX(calc(-${investorIndex * 100}% - ${investorIndex * 24}px))` }}>
-              {investors.map((review) => (
-                <div key={review.id} className="min-w-full lg:min-w-[calc(33.333%-16px)] bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between min-h-[260px]">
-                  <div className="flex gap-4 sm:gap-5">
-                    <div className="flex-shrink-0 mt-1">
-                      <svg width="24" height="20" viewBox="0 0 28 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#96cba9] fill-current opacity-60">
-                        <path d="M12.25 24V14.125C12.25 10.125 11.25 7 9.25 4.75C7.25 2.5 4.16667 1.08333 0 0.5L1.5 6.25C4 6.75 5.83333 7.83333 7 9.5C8.33333 11 9 12.8333 9 15H2V24H12.25ZM27.75 24V14.125C27.75 10.125 26.75 7 24.75 4.75C22.75 2.5 19.6667 1.08333 15.5 0.5L17 6.25C19.5 6.75 21.3333 7.83333 22.5 9.5C23.8333 11 24.5 12.8333 24.5 15H17.5V24H27.75Z"/>
-                      </svg>
-                    </div>
-                    <p className="text-[14px] sm:text-[15px] text-slate-600 leading-relaxed font-medium">
-                      {review.comment}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#EBF5EF] flex items-center justify-center text-[#0d613e] font-bold text-sm">
-                        {review.initials}
+            <div className="w-full overflow-hidden">
+              <div className="flex gap-6 transition-transform duration-500 ease-out" style={investorSlideStyle}>
+                {investors.map((review) => (
+                  <div key={review.id} className="min-w-full lg:min-w-[calc(33.333%-16px)] bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between min-h-[260px]">
+                    <div className="flex gap-4 sm:gap-5">
+                      <div className="flex-shrink-0 mt-1">
+                        <svg width="24" height="20" viewBox="0 0 28 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#96cba9] fill-current opacity-60">
+                          <path d="M12.25 24V14.125C12.25 10.125 11.25 7 9.25 4.75C7.25 2.5 4.16667 1.08333 0 0.5L1.5 6.25C4 6.75 5.83333 7.83333 7 9.5C8.33333 11 9 12.8333 9 15H2V24H12.25ZM27.75 24V14.125C27.75 10.125 26.75 7 24.75 4.75C22.75 2.5 19.6667 1.08333 15.5 0.5L17 6.25C19.5 6.75 21.3333 7.83333 22.5 9.5C23.8333 11 24.5 12.8333 24.5 15H17.5V24H27.75Z"/>
+                        </svg>
                       </div>
-                      <div>
-                        <h4 className="text-[14px] font-bold text-slate-900 leading-tight">{review.authorName}</h4>
-                        <p className="text-[12px] text-slate-500">{review.subtitle}</p>
-                      </div>
+                      <p className="text-[14px] sm:text-[15px] text-slate-600 leading-relaxed font-medium">
+                        {review.comment}
+                      </p>
                     </div>
-                    {renderStars(review.rating, 'text-[#ea580c]')}
+                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#EBF5EF] flex items-center justify-center text-[#0d613e] font-bold text-sm">
+                          {review.initials || (review.authorName ? review.authorName.substring(0, 2).toUpperCase() : 'EF')}
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold text-slate-900 leading-tight">{review.authorName}</h4>
+                          <p className="text-[12px] text-slate-500">{review.subtitle}</p>
+                        </div>
+                      </div>
+                      {renderStars(review.rating, 'text-[#ea580c]')}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <button onClick={nextInvestor} className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex">
-            <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
-          </button>
-        </div>
-        
-        {/* Mobile Pagination Dots */}
-        <div className="flex sm:hidden justify-center items-center gap-2 mt-6">
-          {investors.map((_, idx) => (
-            <button key={idx} onClick={() => setInvestorIndex(idx)} className={`w-2 h-2 rounded-full transition-colors ${idx === investorIndex ? 'bg-[#0d613e]' : 'bg-slate-300'}`} />
-          ))}
-        </div>
+            <button 
+              onClick={nextInvestor} 
+              disabled={maxInvestor <= 0}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex ${maxInvestor <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          </div>
+          
+          {/* Mobile Pagination Dots */}
+          <div className="flex sm:hidden justify-center items-center gap-2 mt-6">
+            {investors.map((_, idx) => (
+              <button key={idx} onClick={() => setInvestorIndex(idx)} className={`w-2 h-2 rounded-full transition-colors ${idx === investorIndex ? 'bg-[#0d613e]' : 'bg-slate-300'}`} />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ----------------- CUSTOMERS SECTION ----------------- */}
       <div className="w-full bg-[#FCF8F5] py-8 sm:py-10 lg:py-12 px-4 sm:px-6 lg:px-12 relative">
-         {/* Subtle background element */}
-         <div className="absolute bottom-0 left-0 -translate-x-1/3 translate-y-1/3 w-[500px] h-[500px] rounded-full border-[1.5px] border-orange-500/10 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -translate-x-1/3 translate-y-1/3 w-[500px] h-[500px] rounded-full border-[1.5px] border-orange-500/10 pointer-events-none" />
 
         <div className="max-w-[1440px] mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 sm:mb-12">
@@ -218,59 +282,67 @@ export default function SplitReviews() {
             </div>
           </div>
 
-        {/* Carousel Container */}
-        <div className="relative flex items-center gap-4">
-          <button onClick={prevCustomer} className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex">
-            <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
-          </button>
+          {/* Carousel Container */}
+          <div className="relative flex items-center gap-4">
+            <button 
+              onClick={prevCustomer} 
+              disabled={maxCustomer <= 0}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex ${maxCustomer <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+            </button>
 
-          <div className="w-full overflow-hidden">
-            <div className="flex gap-6 transition-transform duration-500 ease-out" style={{ transform: `translateX(calc(-${customerIndex * 100}% - ${customerIndex * 24}px))` }}>
-              {customers.map((review) => (
-                <div key={review.id} className="min-w-full lg:min-w-[calc(33.333%-16px)] bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between min-h-[260px]">
-                  <div className="flex gap-4 sm:gap-5">
-                    <div className="flex-shrink-0 mt-1">
-                      <svg width="24" height="20" viewBox="0 0 28 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-orange-300 fill-current opacity-80">
-                        <path d="M12.25 24V14.125C12.25 10.125 11.25 7 9.25 4.75C7.25 2.5 4.16667 1.08333 0 0.5L1.5 6.25C4 6.75 5.83333 7.83333 7 9.5C8.33333 11 9 12.8333 9 15H2V24H12.25ZM27.75 24V14.125C27.75 10.125 26.75 7 24.75 4.75C22.75 2.5 19.6667 1.08333 15.5 0.5L17 6.25C19.5 6.75 21.3333 7.83333 22.5 9.5C23.8333 11 24.5 12.8333 24.5 15H17.5V24H27.75Z"/>
-                      </svg>
-                    </div>
-                    <p className="text-[14px] sm:text-[15px] text-slate-600 leading-relaxed font-medium">
-                      {review.comment}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#FEF3EB] flex items-center justify-center text-[#ea580c] font-bold text-sm">
-                        {review.initials}
+            <div className="w-full overflow-hidden">
+              <div className="flex gap-6 transition-transform duration-500 ease-out" style={customerSlideStyle}>
+                {customers.map((review) => (
+                  <div key={review.id} className="min-w-full lg:min-w-[calc(33.333%-16px)] bg-white rounded-[24px] p-6 sm:p-8 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between min-h-[260px]">
+                    <div className="flex gap-4 sm:gap-5">
+                      <div className="flex-shrink-0 mt-1">
+                        <svg width="24" height="20" viewBox="0 0 28 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-orange-300 fill-current opacity-80">
+                          <path d="M12.25 24V14.125C12.25 10.125 11.25 7 9.25 4.75C7.25 2.5 4.16667 1.08333 0 0.5L1.5 6.25C4 6.75 5.83333 7.83333 7 9.5C8.33333 11 9 12.8333 9 15H2V24H12.25ZM27.75 24V14.125C27.75 10.125 26.75 7 24.75 4.75C22.75 2.5 19.6667 1.08333 15.5 0.5L17 6.25C19.5 6.75 21.3333 7.83333 22.5 9.5C23.8333 11 24.5 12.8333 24.5 15H17.5V24H27.75Z"/>
+                        </svg>
                       </div>
-                      <div>
-                        <h4 className="text-[14px] font-bold text-slate-900 leading-tight">{review.authorName}</h4>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[10px] font-semibold text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <BadgeCheck className="w-3 h-3" />
-                            {review.subtitle}
-                          </span>
+                      <p className="text-[14px] sm:text-[15px] text-slate-600 leading-relaxed font-medium">
+                        {review.comment}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#FEF3EB] flex items-center justify-center text-[#ea580c] font-bold text-sm">
+                          {review.initials || (review.authorName ? review.authorName.substring(0, 2).toUpperCase() : 'EF')}
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-bold text-slate-900 leading-tight">{review.authorName}</h4>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[10px] font-semibold text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <BadgeCheck className="w-3 h-3" />
+                              {review.subtitle}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      {renderStars(review.rating, 'text-[#ea580c]')}
                     </div>
-                    {renderStars(review.rating, 'text-[#ea580c]')}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <button onClick={nextCustomer} className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex">
-            <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
-          </button>
-        </div>
-        
-        {/* Mobile Pagination Dots */}
-        <div className="flex sm:hidden justify-center items-center gap-2 mt-6">
-          {customers.map((_, idx) => (
-            <button key={idx} onClick={() => setCustomerIndex(idx)} className={`w-2 h-2 rounded-full transition-colors ${idx === customerIndex ? 'bg-[#ea580c]' : 'bg-orange-200'}`} />
-          ))}
-        </div>
+            <button 
+              onClick={nextCustomer} 
+              disabled={maxCustomer <= 0}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full items-center justify-center shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors z-10 hidden sm:flex ${maxCustomer <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          </div>
+          
+          {/* Mobile Pagination Dots */}
+          <div className="flex sm:hidden justify-center items-center gap-2 mt-6">
+            {customers.map((_, idx) => (
+              <button key={idx} onClick={() => setCustomerIndex(idx)} className={`w-2 h-2 rounded-full transition-colors ${idx === customerIndex ? 'bg-[#ea580c]' : 'bg-orange-200'}`} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

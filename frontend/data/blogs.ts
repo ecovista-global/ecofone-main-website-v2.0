@@ -16,7 +16,9 @@ export interface BlogPost {
     avatar: string;
   };
   readingTime: string;
-  category: 'Market Trends' | 'Industry Analysis' | 'Buying Guide' | 'Sustainability' | 'Tech News' | 'Tips & Tricks' | 'Popular News' | 'Trending' | 'Recent News';
+  category: 'Market Trends' | 'Industry Analysis' | 'Buying Guide' | 'Sustainability' | 'Tech News' | 'Tips & Tricks' | 'Popular News' | 'Trending' | 'Recent News' | string;
+  status?: 'PUBLISHED' | 'DRAFT';
+  placement?: string;
   imageUrl: string;
   imageAlt: string;
   excerpt: string;

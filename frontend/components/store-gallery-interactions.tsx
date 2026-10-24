@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight, Play, X, MapPin, Sparkles, Quote } from 'lucide-react';
 
 interface GalleryItem {
@@ -67,9 +67,24 @@ const GALLERY_ITEMS: GalleryItem[] = [
   }
 ];
 
+import { api } from '../lib/api';
+
 export default function StoreGalleryInteractions() {
+  const [items, setItems] = useState<GalleryItem[]>(GALLERY_ITEMS);
   const [activeModal, setActiveModal] = useState<GalleryItem | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const cms = await api.getCmsContent();
+        if (cms && Array.isArray(cms.partnerStories) && cms.partnerStories.length > 0) {
+          setItems(cms.partnerStories);
+        }
+      } catch (e) {}
+    }
+    load();
+  }, []);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -125,7 +140,7 @@ export default function StoreGalleryInteractions() {
           className="flex gap-6 overflow-x-auto pb-6 pt-2 scrollbar-none snap-x snap-mandatory scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {GALLERY_ITEMS.map((item) => (
+          {items.map((item) => (
             <div
               key={item.id}
               className="min-w-[300px] sm:min-w-[340px] md:min-w-[360px] lg:min-w-[380px] max-w-[400px] bg-white rounded-[26px] border border-slate-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group snap-start"
