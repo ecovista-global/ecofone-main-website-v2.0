@@ -98,7 +98,7 @@ export default function StoreLocatorSection() {
   };
 
   return (
-    <section id="stores-section" className="w-full bg-[#f8fbf9] py-14 sm:py-20 px-4 sm:px-6 lg:px-12 relative overflow-hidden font-sans">
+    <section id="stores-section" className="w-full bg-[#f8fbf9] pt-12 sm:pt-16 pb-4 sm:pb-6 px-4 sm:px-6 lg:px-12 relative overflow-hidden font-sans">
       
       {/* Decorative ambient backdrop */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-100/30 rounded-full blur-3xl pointer-events-none -mr-40 -mt-40" />

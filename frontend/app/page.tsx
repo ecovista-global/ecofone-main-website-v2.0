@@ -11,7 +11,7 @@ import InvestorModel from "../components/investor-model";
 import StoreLocatorSection from "../components/store-locator-section";
 import WhatMakesDifferent from "../components/what-makes-different";
 import MarketOpportunity from "../components/market-opportunity";
-import StoreGalleryInteractions from "../components/store-gallery-interactions";
+import GallerySection from "../components/gallery-section";
 import RevenueStreamdesk from "../components/revenue-streamdesk";
 
 import { api } from "../lib/api";
@@ -260,24 +260,21 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* 5.5. Store Locator Section */}
-      {vis.storeLocator !== false && (
-        <ScrollReveal>
-          <StoreLocatorSection />
-        </ScrollReveal>
-      )}
+
+      {/* 5.5. Store Locator Section (Redesigned) */}
+      <ScrollReveal className="w-full">
+        <StoreLocatorSection />
+      </ScrollReveal>
+
+      {/* 5.6. EcoFone Life, Culture & Moments Gallery */}
+      <ScrollReveal className="w-full">
+        <GallerySection />
+      </ScrollReveal>
 
       {/* 6. Testimonials (Split Reviews) */}
       {vis.splitReviews !== false && (
         <ScrollReveal className="w-full border-t border-slate-200/60">
           <SplitReviews />
-        </ScrollReveal>
-      )}
-
-      {/* 6.5. Store Owner Happy Interactions & Moments Gallery */}
-      {vis.partnerStories !== false && (
-        <ScrollReveal className="w-full">
-          <StoreGalleryInteractions />
         </ScrollReveal>
       )}
 

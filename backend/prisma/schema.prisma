@@ -355,68 +355,15 @@ model ResearchArticle {
   createdAt   DateTime @default(now())
 }
 
-model ContactMessage {
-  id                 String   @id @default(uuid())
-  applicantName      String
-  email              String
-  phone              String
-  locationPreference String?
-  investmentCapacity Float?   @default(0)
-  experienceDesc     String
-  status             String   @default("PENDING")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model GalleryItem {
+  id            String   @id @default(uuid())
+  type          String   @default("image") // 'image' | 'video'
+  media_url     String
+  caption       String?  // Can include prefix "SIZE:1x2|Caption text"
+  display_order Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
 
-  @@index([status])
-  @@index([createdAt])
-}
-
-model CareerApplication {
-  id              String   @id @default(uuid())
-  jobId           String?
-  jobTitle        String
-  fullName        String
-  email           String
-  phone           String
-  gender          String?  @default("Not specified")
-  experienceYears String?
-  currentLocation String?
-  areaOfInterest  String?
-  currentSalary   String?
-  expectedSalary  String?
-  resumeUrl       String
-  resumeFileName  String?
-  resumeFileSize  String?
-  linkedinUrl     String?
-  portfolioUrl    String?
-  coverNote       String?
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([status])
-  @@index([createdAt])
-}
-
-model CareerJob {
-  id           String   @id @default(uuid())
-  title        String
-  department   String   @default("General")
-  location     String   @default("Lucknow HQ")
-  type         String   @default("Full Time - On-site")
-  experience   String   @default("1 - 3 Years")
-  description  String
-  requirements String[]
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([isActive])
-}
-
-model SystemSetting {
-  key       String   @id
-  value     String
-  updatedAt DateTime @updatedAt
+  @@map("gallery_items")
 }
 

@@ -7,37 +7,7 @@ import BrandsManager from './components/brands-manager';
 import ResearchManager from './components/research-manager';
 import CareersManager from './components/careers-manager';
 import StoresManager from './components/stores-manager';
-import BlogsManager from './components/blogs-manager';
-import DashboardOverview from './components/dashboard-overview';
-import HeroCmsManager from './components/hero-cms-manager';
-import PartnerStoriesManager from './components/partner-stories-manager';
-import TestimonialsManager from './components/testimonials-manager';
-import FaqsManager from './components/faqs-manager';
-import SiteSettingsManager from './components/site-settings-manager';
-import { 
-  LayoutDashboard, 
-  Home, 
-  TrendingUp, 
-  Store, 
-  Video, 
-  MessageSquare, 
-  HelpCircle, 
-  FileText, 
-  Users, 
-  PhoneCall, 
-  ShieldCheck, 
-  Settings, 
-  Download, 
-  Shield, 
-  LogOut, 
-  Search, 
-  ExternalLink, 
-  Menu, 
-  X,
-  Sparkles,
-  Layers,
-  Award
-} from 'lucide-react';
+import GalleryManager from './components/gallery-manager';
 
 interface FranchiseApp {
   id: string;
@@ -309,23 +279,14 @@ export default function AdminDashboardPage() {
   const [subAdminError, setSubAdminError] = useState('');
   const [subAdminSuccess, setSubAdminSuccess] = useState('');
   const [newAdminPermissions, setNewAdminPermissions] = useState<string[]>(['franchise', 'contact']);
-  const [allowedPermissions, setAllowedPermissions] = useState<string[]>([
-    'dashboard', 'heroCms', 'research', 'stores', 'partnerStories', 'testimonials', 'faqs',
-    'blogs', 'franchise', 'contact', 'certificates', 'team', 'siteSettings', 'logs', 'security',
-    'reviews', 'services', 'brands', 'careers'
-  ]);
+  const [allowedPermissions, setAllowedPermissions] = useState<string[]>(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'services', 'brands', 'research', 'careers']);
   
   const [adminLoginError, setAdminLoginError] = useState('');
   const [adminPhoneDisplay, setAdminPhoneDisplay] = useState('+91 99199 65499');
   const [adminEmailDisplay, setAdminEmailDisplay] = useState('business@ecofone.co.in');
 
-  // Active Tab, Global Search & Sidebar mobile states
-  const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'heroCms' | 'research' | 'stores' | 'partnerStories' | 'testimonials' | 'faqs' |
-    'blogs' | 'franchise' | 'contact' | 'certificates' | 'team' | 'siteSettings' | 'logs' | 'security' |
-    'reviews' | 'services' | 'brands' | 'careers'
-  >('dashboard');
-  const [globalSearch, setGlobalSearch] = useState('');
+    // Active Tab & Sidebar mobile states
+  const [activeTab, setActiveTab] = useState<'franchise' | 'contact' | 'stores' | 'gallery' | 'team' | 'logs' | 'security' | 'reviews' | 'certificates' | 'services' | 'brands' | 'research' | 'careers'>('franchise');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [blogsCount, setBlogsCount] = useState<number>(0);
 
@@ -664,7 +625,7 @@ export default function AdminDashboardPage() {
               if (payload.email) setAdminEmailDisplay(payload.email);
 
               if (storedRole === 'master') {
-                setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+                setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
               } else {
                 // Permissions are embedded in the JWT for sub-admins
                 const permissions = payload.permissions || ['franchise', 'contact'];
@@ -683,7 +644,7 @@ export default function AdminDashboardPage() {
         setAdminRole(storedRole);
         
         if (storedRole === 'master') {
-          setAllowedPermissions(['franchise', 'contact', 'stores', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+          setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
         } else {
           try {
             const tokenParts = token.split('.');
@@ -2111,8 +2072,25 @@ export default function AdminDashboardPage() {
     const inputUsername = adminUsernameInput.trim();
     if (!inputPassword) return;
 
-    if (inputUsername) {
-      // Sub-admin login with specific username
+    // 1. Try master admin login directly against backend API (checks database + env)
+    try {
+      const result = await api.masterAdminLogin(inputPassword);
+      const realToken = result.token;
+
+      sessionStorage.setItem('ecofone_token', realToken);
+      sessionStorage.setItem('ecofone_phone', '+91 99199 65499');
+      sessionStorage.setItem('ecofone_admin_role', 'master');
+      localStorage.setItem('ecofone_admin_password', inputPassword);
+
+      setAdminRole('master');
+      setAllowedPermissions(['franchise', 'contact', 'stores', 'gallery', 'team', 'logs', 'security', 'reviews', 'certificates', 'brands', 'services', 'research', 'careers']);
+      setIsAdmin(true);
+      setAdminPasswordInput('');
+      setAdminLoginError('');
+      loadDashboardData(false);
+      return;
+    } catch (masterErr: any) {
+      // 2. If master login fails, try sub-admin login via backend database
       try {
         const result = await api.subAdminLogin(inputPassword, inputUsername);
         const { token, user } = result;
@@ -2591,14 +2569,153 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
-          {/* Categorized Sidebar Nav */}
-          <nav className="p-3 space-y-4 flex-1">
+          {/* Nav List */}
+          <nav className="mt-6 px-4 space-y-1.5 flex-1">
+            {allowedPermissions.includes('franchise') && (
+              <button
+                onClick={() => { setActiveTab('franchise'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'franchise'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">📩</span>
+                <span>Franchise Apps ({applications.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('contact') && (
+              <button
+                onClick={() => { setActiveTab('contact'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'contact'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">📞</span>
+                <span>Contact Inquiries ({contactQueries.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('stores') && (
+              <button
+                onClick={() => { setActiveTab('stores'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'stores'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">🏪</span>
+                <span>Manage Outlets ({stores.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('gallery') && (
+              <button
+                onClick={() => { setActiveTab('gallery'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'gallery'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">🖼️</span>
+                <span>Moments Gallery</span>
+              </button>
+            )}
 
-            {/* GROUP 1: OVERVIEW */}
-            <div className="space-y-1">
-              <div className="text-[11px] font-bold tracking-wider text-slate-400 uppercase px-3 py-1">
-                OVERVIEW
-              </div>
+            {allowedPermissions.includes('team') && (
+              <button
+                onClick={() => { setActiveTab('team'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'team'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">👥</span>
+                <span>Team Members ({teamMembers.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('logs') && (
+              <button
+                onClick={() => { setActiveTab('logs'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'logs'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">📥</span>
+                <span>System Export Logs</span>
+              </button>
+            )}
+            {allowedPermissions.includes('reviews') && (
+              <button
+                onClick={() => { setActiveTab('reviews'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'reviews'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">⭐</span>
+                <span>Customer Reviews ({reviews.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('certificates') && (
+              <button
+                onClick={() => { setActiveTab('certificates'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'certificates'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">🎓</span>
+                <span>Verification Records ({certificates.length})</span>
+              </button>
+            )}
+            {allowedPermissions.includes('services') && (
+              <button
+                onClick={() => { setActiveTab('services'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'services'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">💼</span>
+                <span>Revenue Desk CMS</span>
+              </button>
+            )}
+            {allowedPermissions.includes('brands') && (
+              <button
+                onClick={() => { setActiveTab('brands'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'brands'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">🏷️</span>
+                <span>Top Brands CMS</span>
+              </button>
+            )}
+            {allowedPermissions.includes('research') && (
+              <button
+                onClick={() => { setActiveTab('research'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border-l-2 ${
+                  activeTab === 'research'
+                    ? 'bg-emerald-500/5 text-emerald-400 border-emerald-500'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200 border-transparent'
+                }`}
+              >
+                <span className="text-sm">📈</span>
+                <span>Research Articles</span>
+              </button>
+            )}
+            {allowedPermissions.includes('careers') && (
               <button
                 onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${
@@ -2768,10 +2885,10 @@ export default function AdminDashboardPage() {
             >
               <Menu className="w-4 h-4" />
             </button>
-            <span className="text-slate-400 hidden sm:inline">Admin Panel</span>
-            <span className="text-slate-300 hidden sm:inline">/</span>
-            <span className="text-slate-900 font-bold capitalize truncate">
-              {TAB_TITLES[activeTab] || activeTab}
+            <span className="hidden sm:inline shrink-0">EcoFone Console</span>
+            <span className="text-slate-600 hidden sm:inline shrink-0">/</span>
+            <span className="text-white capitalize truncate">
+              {activeTab === 'gallery' ? 'Moments Gallery CMS' : activeTab === 'stores' ? 'outlets' : activeTab === 'franchise' ? 'franchise applications' : activeTab === 'contact' ? 'contact inquiries' : activeTab === 'reviews' ? 'reviews moderation' : activeTab === 'logs' ? 'export logs' : activeTab === 'certificates' ? 'certificates generator' : activeTab === 'services' ? 'Revenue Desk CMS' : activeTab === 'brands' ? 'Top Brands CMS' : 'security settings'}
             </span>
           </div>
 
@@ -3179,8 +3296,8 @@ export default function AdminDashboardPage() {
             {/* C. OUTLET REGISTERS & STORE MANAGER */}
             {activeTab === 'stores' && <StoresManager />}
 
-            {/* TECHBYTE BLOG MANAGEMENT & PUBLISHING */}
-            {activeTab === 'blogs' && <BlogsManager onCountChange={(c) => setBlogsCount(c)} />}
+            {/* C.2 GALLERY CMS & DRAG-AND-DROP CANVAS */}
+            {activeTab === 'gallery' && <GalleryManager />}
 
             {/* D. SYSTEM LOGS (EXPORT HISTORY) VIEW */}
             {activeTab === 'logs' && (

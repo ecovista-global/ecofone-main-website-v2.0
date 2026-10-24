@@ -977,6 +977,231 @@ export class CmsService {
       throw e;
     }
   }
+
+  // --- Gallery Items CMS ---
+  private getGalleryFilePath(): string {
+    const path = require('path');
+    return path.resolve(__dirname, '..', '..', 'data', 'gallery_items.json');
+  }
+
+  async getGalleryItems(): Promise<any> {
+    // 1. Try Prisma database if accessible
+    try {
+      const items = await this.prisma.galleryItem.findMany({
+        where: { is_active: true },
+        orderBy: { display_order: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch (err) {
+      // Prisma offline or schema sync in progress, fallback to local storage
+    }
+
+    // 2. Fallback to JSON file storage
+    const fs = require('fs');
+    const filePath = this.getGalleryFilePath();
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const items = JSON.parse(raw);
+        return items.sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0));
+      }
+    } catch (e) {}
+
+    // 3. Fallback default EcoFone seed items
+    return [
+      {
+        id: 'eco-gallery-0',
+        type: 'image',
+        media_url: '/gallery_ribbon_opening.jpg',
+        caption: 'SIZE:2x1|Grand Opening of New Delhi Saket Experience Center',
+        display_order: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'eco-gallery-1',
+        type: 'image',
+        media_url: '/gallery_owner_launch.jpg',
+        caption: 'SIZE:1x1|Store Owner Suresh Kumar & Partner Team in Lucknow',
+        display_order: 1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'eco-gallery-2',
+        type: 'image',
+        media_url: '/store_hazratganj.jpg',
+        caption: 'SIZE:1x2|Signature Hazratganj Flagship Store Experience Center',
+        display_order: 2,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'eco-gallery-3',
+        type: 'image',
+        media_url: '/gallery_customer_handover.jpg',
+        caption: 'SIZE:1x1|Certified Warranty Handover to Happy Customer',
+        display_order: 3,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+
+  async createGalleryItem(data: any): Promise<any> {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = this.getGalleryFilePath();
+
+    let items = await this.getGalleryItems();
+    let display_order = data.display_order !== undefined ? parseInt(data.display_order, 10) : undefined;
+
+    if (display_order === undefined || isNaN(display_order)) {
+      const maxOrder = items.reduce((max: number, it: any) => Math.max(max, it.display_order ?? 0), -1);
+      display_order = maxOrder + 1;
+    }
+
+    const newItem = {
+      id: `gallery-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: data.type || 'image',
+      media_url: data.media_url || '',
+      caption: data.caption || '',
+      display_order,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    // Try Prisma database first
+    try {
+      const dbItem = await this.prisma.galleryItem.create({
+        data: {
+          type: newItem.type,
+          media_url: newItem.media_url,
+          caption: newItem.caption,
+          display_order: newItem.display_order,
+          is_active: true,
+        },
+      });
+      return dbItem;
+    } catch (err) {
+      // Fallback to local storage
+    }
+
+    const existingIdx = items.findIndex((it: any) => it.display_order === display_order);
+    if (existingIdx !== -1) {
+      items[existingIdx] = newItem;
+    } else {
+      items.push(newItem);
+    }
+    items.sort((a: any, b: any) => a.display_order - b.display_order);
+
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), 'utf-8');
+
+    return newItem;
+  }
+
+  async reorderGalleryItems(updates: { id: string; display_order: number }[]): Promise<any> {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = this.getGalleryFilePath();
+
+    // Try Prisma database transaction
+    try {
+      await this.prisma.$transaction(
+        updates.map((item) =>
+          this.prisma.galleryItem.update({
+            where: { id: item.id },
+            data: { display_order: parseInt(String(item.display_order), 10) },
+          })
+        )
+      );
+    } catch (err) {
+      // Fallback to local storage
+    }
+
+    const items = await this.getGalleryItems();
+    const updateMap = new Map<string, number>();
+    updates.forEach((u) => updateMap.set(String(u.id), parseInt(String(u.display_order), 10)));
+
+    items.forEach((it: any) => {
+      if (updateMap.has(it.id)) {
+        it.display_order = updateMap.get(it.id);
+      }
+    });
+
+    items.sort((a: any, b: any) => a.display_order - b.display_order);
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), 'utf-8');
+
+    return { success: true };
+  }
+
+  async updateGalleryItem(id: string, data: any): Promise<any> {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = this.getGalleryFilePath();
+
+    // Try Prisma database first
+    try {
+      const updated = await this.prisma.galleryItem.update({
+        where: { id },
+        data: {
+          ...(data.caption !== undefined && { caption: data.caption }),
+          ...(data.media_url && { media_url: data.media_url }),
+          ...(data.type && { type: data.type }),
+          ...(data.is_active !== undefined && { is_active: Boolean(data.is_active) }),
+          ...(data.display_order !== undefined && { display_order: parseInt(data.display_order, 10) }),
+        },
+      });
+      return updated;
+    } catch (err) {
+      // Fallback to local storage
+    }
+
+    const items = await this.getGalleryItems();
+    const item = items.find((i: any) => i.id === id);
+    if (!item) {
+      throw new NotFoundException(`Gallery item ${id} not found`);
+    }
+
+    if (data.caption !== undefined) item.caption = data.caption;
+    if (data.media_url) item.media_url = data.media_url;
+    if (data.type) item.type = data.type;
+    if (data.is_active !== undefined) item.is_active = Boolean(data.is_active);
+    if (data.display_order !== undefined) item.display_order = parseInt(data.display_order, 10);
+
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), 'utf-8');
+
+    return item;
+  }
+
+  async deleteGalleryItem(id: string): Promise<any> {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = this.getGalleryFilePath();
+
+    // Try Prisma database first
+    try {
+      await this.prisma.galleryItem.delete({ where: { id } });
+    } catch (err) {
+      // Fallback to local storage
+    }
+
+    let items = await this.getGalleryItems();
+    items = items.filter((i: any) => i.id !== id);
+
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(items, null, 2), 'utf-8');
+
+    return { success: true };
+  }
 }
+
 
 
